@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* ===== Theme Colors ===== */
+/* Change these CSS custom properties to retheme the entire app */
+:root {
+  --color-primary: #1a2744;
+  --color-primary-light: #2a3a5c;
+  --color-primary-dark: #0f1a2e;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+/* ===== Base Styles ===== */
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: #1f2937;
+  background-color: #f9fafb;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
+
+/* ===== Custom Utilities ===== */
+.font-heading {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Dot pattern background for the login branding panel */
+.dot-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
