@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import TextInput from '../components/ui/TextInput'
 import PasswordInput from '../components/ui/PasswordInput'
+import api from '../utils/api'
 import {
   validateRequired,
   validateMinLength,
@@ -99,18 +100,25 @@ function Signup() {
     if (!validateAll()) return
 
     setIsLoading(true)
+    try {
+      await api.post('/api/auth/signup', {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      })
 
-    // Phase 2: No backend — simulate success
-    // In Phase 4, this becomes: await api.post('/api/auth/signup', { name, email, password })
-    setTimeout(() => {
-      setIsLoading(false)
       setSuccess(true)
 
       // Redirect to login after 2 seconds
       setTimeout(() => {
         navigate('/login')
       }, 2000)
-    }, 800)
+    } catch (err) {
+      const message = err.response?.data?.error?.message || 'Signup failed. Please try again.'
+      setErrors({ submit: message })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -175,6 +183,16 @@ function Signup() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Account created! Redirecting to login...
+            </div>
+          )}
+
+          {/* API error message */}
+          {errors.submit && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-body flex items-center gap-2">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {errors.submit}
             </div>
           )}
 

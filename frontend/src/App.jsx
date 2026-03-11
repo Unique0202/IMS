@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Layout from './components/Layout'
+import ProtectedRoute from './components/ProtectedRoute'
 import StudentDashboard from './pages/student/Dashboard'
 import AdminDashboard from './pages/admin/Dashboard'
 import Placeholder from './pages/Placeholder'
@@ -10,29 +12,35 @@ import Placeholder from './pages/Placeholder'
  * App routing structure:
  *
  *   /                    → redirect to /login
- *   /login               → Login page (no layout)
- *   /signup              → Signup page (no layout)
+ *   /login               → Login page (redirects to dashboard if already logged in)
+ *   /signup              → Signup page
  *
- *   /student             → Layout (student sidebar) wrapper
+ *   /student             → ProtectedRoute (STUDENT) → Layout wrapper
  *     /student/dashboard → Student Dashboard
  *     /student/inventory → Placeholder (Phase 5)
- *     /student/cart      → Placeholder (Phase 6)
- *     /student/requests  → Placeholder (Phase 6)
- *     /student/profile   → Placeholder (Phase 9)
+ *     ...etc
  *
- *   /admin               → Layout (admin sidebar) wrapper
+ *   /admin               → ProtectedRoute (ADMIN) → Layout wrapper
  *     /admin/dashboard   → Admin Dashboard
- *     /admin/inventory   → Placeholder (Phase 8)
- *     /admin/requests    → Placeholder (Phase 7)
- *     /admin/issued      → Placeholder (Phase 8)
- *     /admin/add-item    → Placeholder (Phase 8)
+ *     ...etc
  *
- * HOW NESTED ROUTES WORK:
- *   The Layout component renders <Outlet /> in its main content area.
- *   Child routes (like /student/dashboard) render inside that Outlet.
- *   This gives us persistent navbar + sidebar while only content changes.
+ * PROTECTED ROUTES:
+ *   Student routes require role=STUDENT, admin routes require role=ADMIN.
+ *   If not authenticated → redirect to /login.
+ *   If wrong role → redirect to your own dashboard.
  */
 function App() {
+  const { loading } = useAuth()
+
+  // While checking saved token on page load, show nothing (prevents flash)
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
   return (
     <Routes>
       {/* Redirect root to login */}
@@ -42,8 +50,15 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
 
-      {/* Student routes — wrapped in Layout */}
-      <Route path="/student" element={<Layout />}>
+      {/* Student routes — protected + wrapped in Layout */}
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Navigate to="/student/dashboard" replace />} />
         <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="inventory" element={<Placeholder title="Browse Inventory" message="Coming in Phase 5" />} />
@@ -53,8 +68,15 @@ function App() {
         <Route path="profile" element={<Placeholder title="My Profile" message="Coming in Phase 9" />} />
       </Route>
 
-      {/* Admin routes — wrapped in Layout */}
-      <Route path="/admin" element={<Layout />}>
+      {/* Admin routes — protected + wrapped in Layout */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="inventory" element={<Placeholder title="Inventory" message="Coming in Phase 8" />} />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../utils/api'
 
 /**
  * Login page — the first page users see.
@@ -9,15 +10,12 @@ import { useAuth } from '../context/AuthContext'
  *   Left (60%): Navy branding panel with CIPD Lab / IMS text + dot pattern
  *   Right (40%): White login card with Student/Admin toggle
  *
- * HOW IT WORKS (Phase 3 — dev mode, no backend):
- *   - Enter any email/password and click Login
- *   - Sets a fake user in AuthContext based on the selected tab
- *   - Navigates to the appropriate dashboard
- *
- * WHAT CHANGES IN PHASE 4:
- *   - Login button will call POST /api/auth/login
- *   - On success: real user from DB stored in AuthContext
- *   - On fail: show error from API response
+ * HOW IT WORKS (Phase 4):
+ *   - Calls POST /api/auth/login with email + password
+ *   - Server returns JWT token + user object
+ *   - Token saved to localStorage, user saved to AuthContext
+ *   - Navigate to student or admin dashboard based on role
+ *   - Tab toggle is cosmetic — the server determines the actual role
  */
 function Login() {
   const [activeTab, setActiveTab] = useState('student') // 'student' or 'admin'
@@ -39,19 +37,22 @@ function Login() {
       return
     }
 
-    // Phase 3: Dev mode — create fake user and navigate to dashboard
-    // This gets replaced with a real API call in Phase 4
     setIsLoading(true)
-    setTimeout(() => {
+    try {
+      const response = await api.post('/api/auth/login', { email, password })
+      const { token, user } = response.data.data
+
+      // Save to AuthContext + localStorage
+      login(user, token)
+
+      // Navigate based on role from server (not from the tab toggle)
+      navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard')
+    } catch (err) {
+      const message = err.response?.data?.error?.message || 'Login failed. Please try again.'
+      setError(message)
+    } finally {
       setIsLoading(false)
-
-      const fakeUser = activeTab === 'admin'
-        ? { id: 1, name: 'CIPD Admin', email: email, role: 'ADMIN' }
-        : { id: 2, name: 'Test Student', email: email, role: 'STUDENT' }
-
-      login(fakeUser)
-      navigate(activeTab === 'admin' ? '/admin/dashboard' : '/student/dashboard')
-    }, 500)
+    }
   }
 
   return (

@@ -1,0 +1,168 @@
+// Prisma Schema for CIPD IMS
+//
+// WHAT IS PRISMA?
+//   Prisma is an ORM (Object-Relational Mapper). Instead of writing raw SQL
+//   like "SELECT * FROM users WHERE email = ?", you write:
+//   prisma.user.findUnique({ where: { email } })
+//
+//   Prisma generates a type-safe client from this schema file. When you
+//   change the schema and run `npx prisma migrate dev`, it:
+//   1. Generates a SQL migration file
+//   2. Runs that SQL against your database
+//   3. Regenerates the Prisma client with updated types
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== USER =====
+// Stores both students and admins. Role field distinguishes them.
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  password      String         // bcrypt hashed — NEVER store plain text
+  role          Role           @default(STUDENT)
+  requests      Request[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+// ===== CATEGORY =====
+// 9 categories matching the CIPD inventory sheets
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  items Item[]
+}
+
+// ===== ITEM =====
+// Each physical item type in the lab (e.g. "Arduino UNO", qty: 20)
+model Item {
+  id             Int           @id @default(autoincrement())
+  name           String
+  quantity       Int           @default(0)
+  rfid           String?
+  purpose        Purpose       @default(ISSUE)
+  purchaseDate   DateTime?
+  receivingDate  DateTime?
+  vendorDetails  String?
+  costOfPurchase Float?
+  billNo         String?
+  status         ItemStatus    @default(ACTIVE)
+  type           ItemType      @default(NA)
+  location       String?
+  category       Category      @relation(fields: [categoryId], references: [id])
+  categoryId     Int
+  requestItems   RequestItem[]
+  deletedAt      DateTime?     // Soft delete — null means active
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+// Purpose of purchase — why was this item bought?
+enum Purpose {
+  COURSE
+  HACKATHON
+  ISSUE
+}
+
+// Active = available for issue, Inactive = stored away / not in use
+enum ItemStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// Consumable = doesn't need to be returned (wires, batteries)
+// Returnable = must be returned (boards, tools)
+// NA = not classified yet
+enum ItemType {
+  CONSUMABLE
+  RETURNABLE
+  NA
+}
+
+// ===== REQUEST =====
+// A student's request to borrow items. Goes through a lifecycle:
+// PENDING → APPROVED → ISSUED → RETURNED
+//        → DECLINED (terminal)
+model Request {
+  id                 Int           @id @default(autoincrement())
+  reason             String
+  status             RequestStatus @default(PENDING)
+  declineReason      String?
+  collectionDeadline DateTime?     // Set when approved (24hrs from approval)
+  user               User          @relation(fields: [userId], references: [id])
+  userId             Int
+  items              RequestItem[]
+  transaction        Transaction?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  ISSUED
+  RETURNED
+}
+
+// ===== REQUEST ITEM =====
+// Junction table: which items and how many are in each request
+model RequestItem {
+  id        Int     @id @default(autoincrement())
+  quantity  Int
+  request   Request @relation(fields: [requestId], references: [id])
+  requestId Int
+  item      Item    @relation(fields: [itemId], references: [id])
+  itemId    Int
+}
+
+// ===== TRANSACTION =====
+// Created when items are physically issued. Tracks the lending lifecycle.
+model Transaction {
+  id                Int       @id @default(autoincrement())
+  issuedTo          String    // Student name (denormalized for history)
+  professorName     String?
+  conditionOnIssue  String?
+  conditionOnReturn String?
+  issuedAt          DateTime  @default(now())
+  expectedReturnAt  DateTime?
+  returnedAt        DateTime?
+  request           Request   @relation(fields: [requestId], references: [id])
+  requestId         Int       @unique
+  createdAt         DateTime  @default(now())
+}
+
+// ===== NOTIFICATION =====
+// Alerts for students when their request status changes.
+// Added in schema now to avoid a migration in Phase 9.
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id])
+  message   String
+  type      NotificationType
+  read      Boolean          @default(false)
+  requestId Int?
+  createdAt DateTime         @default(now())
+}
+
+enum NotificationType {
+  APPROVED
+  DECLINED
+  ISSUED
+  RETURNED
+  OVERDUE
+}
