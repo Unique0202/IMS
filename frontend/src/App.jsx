@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import Placeholder from './pages/Placeholder'
 
 function App() {
@@ -10,7 +11,7 @@ function App() {
 
       {/* Auth pages */}
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Placeholder title="Signup" message="Coming in Phase 2" />} />
+      <Route path="/signup" element={<Signup />} />
 
       {/* Student pages (placeholder until Phase 3) */}
       <Route path="/student/dashboard" element={<Placeholder title="Student Dashboard" message="Coming in Phase 3" />} />
