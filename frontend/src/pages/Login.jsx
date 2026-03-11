@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 /**
  * Login page — the first page users see.
@@ -8,15 +9,14 @@ import { Link } from 'react-router-dom'
  *   Left (60%): Navy branding panel with CIPD Lab / IMS text + dot pattern
  *   Right (40%): White login card with Student/Admin toggle
  *
- * HOW IT WORKS (Phase 1 — no backend yet):
- *   - Toggle between Student and Admin tabs
- *   - Fill email + password
- *   - Click Login → shows alert (backend not connected)
- *   - "Create account" link on Student tab → navigates to /signup
+ * HOW IT WORKS (Phase 3 — dev mode, no backend):
+ *   - Enter any email/password and click Login
+ *   - Sets a fake user in AuthContext based on the selected tab
+ *   - Navigates to the appropriate dashboard
  *
  * WHAT CHANGES IN PHASE 4:
  *   - Login button will call POST /api/auth/login
- *   - On success: navigate to /student/dashboard or /admin/dashboard
+ *   - On success: real user from DB stored in AuthContext
  *   - On fail: show error from API response
  */
 function Login() {
@@ -25,6 +25,9 @@ function Login() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -36,13 +39,19 @@ function Login() {
       return
     }
 
-    // Phase 1: No backend — show a message
+    // Phase 3: Dev mode — create fake user and navigate to dashboard
     // This gets replaced with a real API call in Phase 4
     setIsLoading(true)
     setTimeout(() => {
       setIsLoading(false)
-      setError('Backend not connected yet — coming in Phase 4!')
-    }, 800)
+
+      const fakeUser = activeTab === 'admin'
+        ? { id: 1, name: 'CIPD Admin', email: email, role: 'ADMIN' }
+        : { id: 2, name: 'Test Student', email: email, role: 'STUDENT' }
+
+      login(fakeUser)
+      navigate(activeTab === 'admin' ? '/admin/dashboard' : '/student/dashboard')
+    }, 500)
   }
 
   return (
