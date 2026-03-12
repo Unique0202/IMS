@@ -3,41 +3,109 @@
 /* ===== Theme Colors ===== */
 /* Change these CSS custom properties to retheme the entire app */
 :root {
-  --color-primary: #1a2744;
-  --color-primary-light: #2a3a5c;
-  --color-primary-dark: #0f1a2e;
-  --color-accent: #3b82f6;
+  --color-primary: #0f3b4c;
+  --color-primary-light: #15566e;
+  --color-primary-dark: #082733;
+  --color-accent: #06b6d4;
   --color-accent-hover: #2563eb;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
+  --color-shell: #edf3f6;
+  --color-panel: #0b1f2a;
 }
 
 /* ===== Base Styles ===== */
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Manrope', sans-serif;
   color: #1f2937;
-  background-color: #f9fafb;
+  background:
+    radial-gradient(circle at top left, rgba(6, 182, 212, 0.08), transparent 30%),
+    linear-gradient(180deg, #f7fbfc 0%, #edf3f6 100%);
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 /* ===== Custom Utilities ===== */
 .font-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .font-body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Dot pattern background for the login branding panel */
 .dot-pattern {
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+.lab-hero-panel {
+  background:
+    linear-gradient(135deg, rgba(8, 39, 51, 0.96), rgba(15, 59, 76, 0.92)),
+    linear-gradient(180deg, #0b1f2a 0%, #0f3b4c 100%);
+}
+
+.lab-grid-pattern {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.4));
+}
+
+.lab-illustration {
+  background-image: url("data:image/svg+xml,%3Csvg width='1200' height='900' viewBox='0 0 1200 900' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='652' y='176' width='320' height='432' rx='28' fill='rgba(255,255,255,0.04)' stroke='rgba(165,243,252,0.15)'/%3E%3Crect x='694' y='220' width='236' height='48' rx='12' fill='rgba(255,255,255,0.05)' stroke='rgba(255,255,255,0.1)'/%3E%3Crect x='694' y='292' width='236' height='48' rx='12' fill='rgba(255,255,255,0.05)' stroke='rgba(255,255,255,0.1)'/%3E%3Crect x='694' y='364' width='102' height='102' rx='16' fill='rgba(6,182,212,0.08)' stroke='rgba(165,243,252,0.2)'/%3E%3Crect x='826' y='364' width='104' height='102' rx='16' fill='rgba(255,255,255,0.04)' stroke='rgba(255,255,255,0.1)'/%3E%3Crect x='694' y='494' width='236' height='68' rx='16' fill='rgba(255,255,255,0.04)' stroke='rgba(255,255,255,0.1)'/%3E%3Cpath d='M120 662H582' stroke='rgba(255,255,255,0.12)' stroke-width='2'/%3E%3Cpath d='M176 662V372C176 349.909 193.909 332 216 332H496C518.091 332 536 349.909 536 372V662' stroke='rgba(255,255,255,0.16)' stroke-width='2'/%3E%3Cpath d='M260 332V236C260 219.431 273.431 206 290 206H422C438.569 206 452 219.431 452 236V332' stroke='rgba(165,243,252,0.16)' stroke-width='2'/%3E%3Crect x='214' y='378' width='286' height='188' rx='20' fill='rgba(10,18,26,0.24)' stroke='rgba(255,255,255,0.1)'/%3E%3Crect x='236' y='402' width='242' height='136' rx='14' fill='rgba(15,59,76,0.22)' stroke='rgba(165,243,252,0.14)'/%3E%3Cpath d='M256 432H350' stroke='rgba(255,255,255,0.14)' stroke-width='2'/%3E%3Cpath d='M256 468H332' stroke='rgba(255,255,255,0.1)' stroke-width='2'/%3E%3Ccircle cx='404' cy='438' r='26' stroke='rgba(255,255,255,0.18)' stroke-width='2'/%3E%3Ccircle cx='404' cy='438' r='8' fill='rgba(165,243,252,0.55)'/%3E%3Crect x='438' y='418' width='20' height='40' rx='10' stroke='rgba(255,255,255,0.18)' stroke-width='2'/%3E%3Ccircle cx='252' cy='598' r='10' fill='rgba(6,182,212,0.7)'/%3E%3Ccircle cx='286' cy='598' r='10' fill='rgba(34,197,94,0.7)'/%3E%3Ccircle cx='320' cy='598' r='10' fill='rgba(245,158,11,0.7)'/%3E%3Cpath d='M536 420C592 420 612 454 652 454' stroke='rgba(165,243,252,0.22)' stroke-width='2' stroke-dasharray='8 8'/%3E%3Cpath d='M536 486C586 486 606 518 652 518' stroke='rgba(255,255,255,0.16)' stroke-width='2' stroke-dasharray='8 8'/%3E%3Ccircle cx='720' cy='232' r='6' fill='rgba(165,243,252,0.72)'/%3E%3Ccircle cx='750' cy='232' r='6' fill='rgba(255,255,255,0.35)'/%3E%3Ccircle cx='780' cy='232' r='6' fill='rgba(255,255,255,0.35)'/%3E%3Crect x='716' y='510' width='116' height='16' rx='8' fill='rgba(255,255,255,0.08)'/%3E%3Crect x='716' y='536' width='88' height='12' rx='6' fill='rgba(165,243,252,0.12)'/%3E%3Cpath d='M904 156C904 132.804 885.196 114 862 114C838.804 114 820 132.804 820 156C820 179.196 838.804 198 862 198' stroke='rgba(165,243,252,0.18)' stroke-width='2'/%3E%3Cpath d='M862 114V198' stroke='rgba(255,255,255,0.16)' stroke-width='2'/%3E%3Cpath d='M820 156H904' stroke='rgba(255,255,255,0.16)' stroke-width='2'/%3E%3Ccircle cx='862' cy='156' r='10' fill='rgba(6,182,212,0.42)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4rem bottom 3rem;
+  background-size: min(72%, 760px);
+  pointer-events: none;
+}
+
+.lab-stat-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+  border-radius: 24px;
+  padding: 1rem;
+}
+
+.lab-stat-label {
+  display: block;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(165, 243, 252, 0.8);
+}
+
+.lab-stat-value {
+  display: block;
+  margin-top: 0.7rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.lab-stat-copy {
+  margin-top: 0.45rem;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(226, 232, 240, 0.82);
+}
+
+@media (max-width: 1279px) {
+  .lab-illustration {
+    background-position: right 2rem bottom 2rem;
+    background-size: min(78%, 620px);
+  }
 }

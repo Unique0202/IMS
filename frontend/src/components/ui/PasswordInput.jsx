@@ -57,16 +57,16 @@ function PasswordInput({
           onBlur={onBlur}
           placeholder={placeholder}
           autoComplete={autoComplete}
-          className={`w-full px-4 py-3 pr-11 border rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder:text-gray-400 ${
+          className={`w-full px-4 py-3.5 pr-11 border rounded-2xl text-sm font-body bg-white focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder:text-slate-400 ${
             error
               ? 'border-red-300 focus:ring-red-400 bg-red-50/30'
-              : 'border-gray-200 focus:ring-blue-500'
+              : 'border-slate-200 focus:ring-cyan-500'
           }`}
         />
         <button
           type="button"
           onClick={() => setVisible(!visible)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           tabIndex={-1}
           aria-label={visible ? 'Hide password' : 'Show password'}
         >

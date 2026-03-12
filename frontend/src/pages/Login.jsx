@@ -56,91 +56,94 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[var(--color-shell)]">
       {/* ===== LEFT PANEL: Branding (60%) ===== */}
       <div
-        className="hidden lg:flex lg:w-[60%] relative overflow-hidden flex-col justify-center items-center text-white p-12"
-        style={{ backgroundColor: 'var(--color-primary)' }}
+        className="hidden lg:flex lg:w-[58%] relative overflow-hidden flex-col justify-between p-12 xl:p-16 text-white lab-hero-panel"
       >
-        {/* Dot pattern overlay */}
-        <div className="absolute inset-0 dot-pattern" />
+        <div className="absolute inset-0 lab-grid-pattern opacity-60" />
+        <div className="absolute inset-0 lab-illustration opacity-90" />
+        <div className="absolute inset-y-0 right-0 w-px bg-cyan-300/20" />
+        <div className="absolute top-20 right-16 h-24 w-24 border border-cyan-300/20 rounded-2xl rotate-6" />
+        <div className="absolute bottom-28 left-12 h-40 w-40 border border-white/8 rounded-full" />
 
-        {/* Decorative gradient blobs */}
-        <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.5), transparent)' }}
-        />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.4), transparent)' }}
-        />
+        <div className="relative z-10 max-w-xl">
+          <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200/20 bg-white/6 px-4 py-2 text-xs font-semibold tracking-[0.28em] uppercase text-cyan-100 font-body">
+            <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.8)]" />
+            CIPD | IIIT-Delhi | Lab Control
+          </div>
 
-        {/* Main branding text */}
-        <div className="relative z-10 text-center max-w-lg">
-          <h1 className="font-heading text-6xl font-bold mb-3 leading-tight">
-            CIPD Lab
-          </h1>
-          <h2 className="font-heading text-3xl font-semibold mb-6 text-blue-200">
-            Inventory Management System
-          </h2>
-          <div className="w-20 h-0.5 bg-blue-400 mx-auto mb-6 opacity-60" />
-          <p className="text-blue-200 text-lg font-body leading-relaxed">
-            IIITD — Indraprastha Institute of<br />
-            Information Technology Delhi
-          </p>
+          <div className="mt-10">
+            <h1 className="font-heading text-5xl xl:text-6xl font-semibold leading-[1.02] text-white">
+              Lab Inventory Management System
+            </h1>
+            <p className="mt-6 max-w-lg text-base xl:text-lg leading-8 text-slate-200/88 font-body">
+              A central portal for managing lab equipment, inventory records, and authorized access.
+            </p>
+          </div>
         </div>
 
-        {/* Bottom decorative line */}
-        <div className="absolute bottom-8 left-12 right-12 flex items-center gap-3 opacity-30">
-          <div className="h-px flex-1 bg-white" />
-          <span className="text-xs tracking-widest uppercase font-body">Secure Inventory Portal</span>
-          <div className="h-px flex-1 bg-white" />
+        <div className="relative z-10 flex items-center justify-between gap-6 border-t border-white/10 pt-6 text-sm font-body text-slate-300/90">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Authorized access only
+          </div>
+          <div>Built for institute lab inventory workflows.</div>
         </div>
       </div>
 
       {/* ===== RIGHT PANEL: Login Form (40%) ===== */}
-      <div className="w-full lg:w-[40%] flex items-center justify-center p-6 sm:p-12 bg-white">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:w-[42%] flex items-center justify-center p-6 sm:p-10 xl:p-12">
+        <div className="w-full max-w-lg rounded-[32px] border border-slate-200 bg-white px-6 py-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8 sm:py-10">
 
           {/* Mobile-only branding (shown when left panel is hidden) */}
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="font-heading text-3xl font-bold" style={{ color: 'var(--color-primary)' }}>
-              CIPD Lab IMS
+          <div className="lg:hidden mb-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-600 font-body">
+              <span className="h-2 w-2 rounded-full bg-cyan-500" />
+              CIPD Lab Control
+            </div>
+            <h1 className="font-heading text-3xl font-semibold mt-4 text-slate-950">
+              Inventory operations access
             </h1>
-            <p className="text-gray-500 text-sm mt-1 font-body">IIITD Inventory Management</p>
+            <p className="text-slate-500 text-sm mt-2 font-body">IIIT-Delhi laboratory inventory portal</p>
           </div>
 
           {/* Welcome text */}
           <div className="mb-8">
-            <h2 className="font-heading text-2xl font-bold text-gray-900">Welcome back</h2>
-            <p className="text-gray-500 mt-1 font-body">Sign in to your account to continue</p>
+            <h2 className="font-heading text-3xl font-semibold text-slate-950 mt-4">
+              Sign in
+            </h2>
+            <p className="text-slate-500 mt-2 font-body leading-7">
+              Use your institute credentials to continue.
+            </p>
           </div>
 
           {/* ===== Tab Toggle: Student | Admin ===== */}
-          <div className="flex bg-gray-100 rounded-xl p-1 mb-8">
+          <div className="flex bg-slate-100 rounded-2xl p-1.5 mb-6">
             <button
               type="button"
               onClick={() => { setActiveTab('student'); setError('') }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold font-body transition-all duration-200 cursor-pointer ${
+              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold font-body transition-all duration-200 cursor-pointer ${
                 activeTab === 'student'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Student
+              Student Access
             </button>
             <button
               type="button"
               onClick={() => { setActiveTab('admin'); setError('') }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold font-body transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold font-body transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'admin'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-slate-950 shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              {/* Lock icon for admin */}
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              Admin
+              Lab Admin Access
             </button>
           </div>
 
@@ -149,7 +152,7 @@ function Login() {
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5 font-body">
-                Email address
+                Institute email
               </label>
               <input
                 id="email"
@@ -157,7 +160,7 @@ function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={activeTab === 'student' ? 'name@iiitd.ac.in' : 'admin@cipd.iiitd.ac.in'}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
+                className="w-full px-4 py-3.5 border border-slate-200 bg-white rounded-2xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all placeholder:text-slate-400"
                 autoComplete="email"
               />
             </div>
@@ -173,14 +176,14 @@ function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
+                className="w-full px-4 py-3.5 border border-slate-200 bg-white rounded-2xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all placeholder:text-slate-400"
                 autoComplete="current-password"
               />
             </div>
 
             {/* Error message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 font-body flex items-start gap-2">
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-2xl px-4 py-3 font-body flex items-start gap-2">
                 <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -192,31 +195,31 @@ function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl text-white font-semibold text-sm font-body transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--color-primary)' }}
+              className="w-full py-3.5 px-4 rounded-2xl text-white font-semibold text-sm font-body transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-95 active:scale-[0.99] shadow-[0_18px_40px_rgba(8,145,178,0.28)]"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-light))' }}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  {/* Spinner */}
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Signing in...
+                  Authenticating...
                 </span>
               ) : (
-                `Sign in as ${activeTab === 'student' ? 'Student' : 'Admin'}`
+                `Enter ${activeTab === 'student' ? 'Student' : 'Admin'} Workspace`
               )}
             </button>
           </form>
 
           {/* ===== Footer Links ===== */}
-          <div className="mt-6 text-center">
+          <div className="mt-6">
+            <div className="text-center">
             {activeTab === 'student' ? (
               <p className="text-sm text-gray-500 font-body">
-                New here?{' '}
-                <Link to="/signup" className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
-                  Create account
+                Need student access?{' '}
+                <Link to="/signup" className="text-cyan-700 font-semibold hover:text-cyan-800 transition-colors">
+                  Register with IIITD email
                 </Link>
               </p>
             ) : (
@@ -224,9 +227,10 @@ function Login() {
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Admin accounts are pre-approved
+                Admin accounts are provisioned by authorized lab staff
               </p>
             )}
+            </div>
           </div>
         </div>
       </div>

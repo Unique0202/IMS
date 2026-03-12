@@ -26,9 +26,11 @@ import Sidebar from './Sidebar'
  */
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const expandedSidebarWidth = 'ml-72'
+  const collapsedSidebarWidth = 'ml-18'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[var(--color-shell)]">
       {/* Fixed top navbar */}
       <Navbar
         sidebarOpen={sidebarOpen}
@@ -41,10 +43,10 @@ function Layout() {
       {/* Main content area — offset by navbar height and sidebar width */}
       <main
         className={`pt-16 transition-all duration-300 ${
-          sidebarOpen ? 'ml-60' : 'ml-16'
+          sidebarOpen ? expandedSidebarWidth : collapsedSidebarWidth
         }`}
       >
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="px-6 py-8 xl:px-8">
           <Outlet />
         </div>
       </main>

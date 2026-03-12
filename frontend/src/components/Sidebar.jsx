@@ -120,57 +120,89 @@ function Sidebar({ isOpen }) {
 
   return (
     <aside
-      className={`fixed top-16 left-0 bottom-0 z-30 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
-        isOpen ? 'w-60' : 'w-16'
+      className={`fixed top-16 left-0 bottom-0 z-30 border-r border-slate-200 bg-white transition-all duration-300 ease-in-out ${
+        isOpen ? 'w-72' : 'w-[72px]'
       }`}
     >
-      <nav className="flex flex-col gap-1 p-3 mt-2">
-        {links.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium font-body transition-all duration-200 group relative ${
-                isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
-          >
-            {/* Icon */}
-            <span className="shrink-0">{link.icon}</span>
+      <div className="flex h-full flex-col">
+        <div className={`border-b border-slate-200 px-4 py-4 ${isOpen ? '' : 'px-3'}`}>
+          <div className={`rounded-2xl border border-slate-200 bg-slate-50 ${isOpen ? 'px-4 py-4' : 'px-3 py-4'}`}>
+            <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-white shadow-[0_10px_25px_rgba(15,59,76,0.25)]">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M9.75 3v2.25m4.5-2.25v2.25M4.5 9.75h15M6.75 6h10.5A2.25 2.25 0 0119.5 8.25v9A2.25 2.25 0 0117.25 19.5H6.75A2.25 2.25 0 014.5 17.25v-9A2.25 2.25 0 016.75 6zM9 13h.008v.008H9V13zm3 0h.008v.008H12V13zm3 0h.008v.008H15V13z" />
+                </svg>
+              </div>
 
-            {/* Label (hidden when collapsed) */}
-            <span
-              className={`whitespace-nowrap transition-opacity duration-200 ${
-                isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
-              }`}
-            >
-              {link.label}
-            </span>
+              <div className={`${isOpen ? 'opacity-100' : 'hidden'}`}>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500 font-body">Workspace</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900 font-body">
+                  {isAdmin() ? 'Admin Control' : 'Student Portal'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Badge (e.g. cart count, pending requests) */}
-            {link.badge > 0 && (
-              <span
-                className={`bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center ${
-                  isOpen
-                    ? 'ml-auto px-2 py-0.5 min-w-[20px]'
-                    : 'absolute -top-1 -right-1 w-4 h-4 text-[10px]'
-                }`}
+        <nav className="flex-1 px-3 py-4">
+          <div className={`mb-3 ${isOpen ? 'px-2' : 'hidden'}`}>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-body">Navigation</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            {links.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium font-body transition-all duration-200 group relative ${
+                    isActive
+                      ? 'bg-cyan-50 text-cyan-800 border border-cyan-100'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                  }`
+                }
               >
-                {link.badge}
-              </span>
-            )}
+                <span className="shrink-0">{link.icon}</span>
 
-            {/* Tooltip when collapsed */}
-            {!isOpen && (
-              <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                {link.label}
-              </span>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+                <span
+                  className={`whitespace-nowrap transition-opacity duration-200 ${
+                    isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
+                  }`}
+                >
+                  {link.label}
+                </span>
+
+                {link.badge > 0 && (
+                  <span
+                    className={`bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center ${
+                      isOpen
+                        ? 'ml-auto px-2 py-0.5 min-w-[20px]'
+                        : 'absolute -top-1 -right-1 w-4 h-4 text-[10px]'
+                    }`}
+                  >
+                    {link.badge}
+                  </span>
+                )}
+
+                {!isOpen && (
+                  <span className="absolute left-full ml-3 px-2 py-1 bg-slate-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                    {link.label}
+                  </span>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+
+        {isOpen && (
+          <div className="border-t border-slate-200 px-4 py-4">
+            <div className="rounded-2xl bg-slate-50 px-4 py-3">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500 font-body">CIPD</p>
+              <p className="mt-1 text-sm text-slate-700 font-body">Electronics lab inventory workspace</p>
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   )
 }

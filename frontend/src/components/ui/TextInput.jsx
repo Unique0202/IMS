@@ -47,10 +47,10 @@ function TextInput({
         onBlur={onBlur}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className={`w-full px-4 py-3 border rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder:text-gray-400 ${
+        className={`w-full px-4 py-3.5 border rounded-2xl text-sm font-body bg-white focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder:text-slate-400 ${
           error
             ? 'border-red-300 focus:ring-red-400 bg-red-50/30'
-            : 'border-gray-200 focus:ring-blue-500'
+            : 'border-slate-200 focus:ring-cyan-500'
         }`}
       />
       {error && (
