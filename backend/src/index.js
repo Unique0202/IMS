@@ -22,6 +22,7 @@ const cookieParser = require('cookie-parser')
 const { errorHandler } = require('./middleware/errorHandler')
 
 const authRoutes = require('./routes/auth')
+const inventoryRoutes = require('./routes/inventory')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -51,6 +52,9 @@ app.get('/api/health', (req, res) => {
 // Auth routes: signup, login, me, logout
 app.use('/api/auth', authRoutes)
 
+// Inventory routes: categories, items, search
+app.use('/api/inventory', inventoryRoutes)
+
 // ===== ERROR HANDLER (must be last) =====
 app.use(errorHandler)
 
@@ -58,5 +62,6 @@ app.use(errorHandler)
 app.listen(PORT, () => {
   console.log(`\n  CIPD IMS Backend running at http://localhost:${PORT}`)
   console.log(`  Health check: http://localhost:${PORT}/api/health`)
-  console.log(`  Auth routes:  POST /api/auth/signup, POST /api/auth/login, GET /api/auth/me\n`)
+  console.log(`  Auth routes:  POST /api/auth/signup, POST /api/auth/login, GET /api/auth/me`)
+  console.log(`  Inventory:    GET /api/inventory/categories, /categories/:id, /items/:id, /search?q=\n`)
 })
