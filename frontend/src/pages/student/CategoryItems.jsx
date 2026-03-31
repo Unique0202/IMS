@@ -65,6 +65,47 @@ function CategoryItems() {
     fetchItems()
   }, [categoryId, typeFilter, sortField, sortOrder])
 
+  // Item image placeholder — SVG icon based on type
+  const ItemImage = ({ item }) => {
+    if (item.imageUrl) {
+      return (
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0"
+          onError={(e) => {
+            // If URL fails to load, swap to placeholder
+            e.target.style.display = 'none'
+            e.target.nextSibling.style.display = 'flex'
+          }}
+        />
+      )
+    }
+    const iconColor = item.type === 'RETURNABLE'
+      ? 'bg-blue-50 text-blue-400'
+      : item.type === 'CONSUMABLE'
+      ? 'bg-amber-50 text-amber-400'
+      : 'bg-slate-100 text-slate-400'
+
+    return (
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${iconColor}`}>
+        {item.type === 'RETURNABLE' ? (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
+        ) : item.type === 'CONSUMABLE' ? (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        ) : (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        )}
+      </div>
+    )
+  }
+
   // Type badge styling
   const typeBadge = (type) => {
     switch (type) {
@@ -215,7 +256,10 @@ function CategoryItems() {
                     className={`border-b border-slate-50 hover:bg-slate-50/50 transition-colors ${idx === items.length - 1 ? 'border-b-0' : ''}`}
                   >
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-slate-900 font-body">{item.name}</p>
+                      <div className="flex items-center gap-3">
+                        <ItemImage item={item} />
+                        <p className="text-sm font-medium text-slate-900 font-body">{item.name}</p>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full border font-medium font-body ${typeBadge(item.type)}`}>
@@ -304,9 +348,12 @@ function CategoryItems() {
             {items.map((item) => (
               <div key={item.id} className="bg-white border border-slate-200 rounded-2xl p-4">
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 font-body">{item.name}</p>
-                    <p className="text-xs text-slate-500 font-body mt-0.5">{item.location || 'CIPD Lab'}</p>
+                  <div className="flex items-start gap-3">
+                    <ItemImage item={item} />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 font-body">{item.name}</p>
+                      <p className="text-xs text-slate-500 font-body mt-0.5">{item.location || 'CIPD Lab'}</p>
+                    </div>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full border font-medium font-body ${typeBadge(item.type)}`}>
                     {item.type === 'RETURNABLE' ? 'Returnable' : item.type === 'CONSUMABLE' ? 'Consumable' : 'N/A'}

@@ -131,6 +131,7 @@ router.get('/categories/:id', authenticate, async (req, res, next) => {
         status: true,
         location: true,
         purpose: true,
+        imageUrl: true,
       },
     })
 
