@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../../utils/api'
+import { useCart } from '../../context/CartContext'
 
 /**
  * Category Items page — shows all items within a single category.
@@ -23,11 +24,17 @@ import api from '../../utils/api'
 
 function CategoryItems() {
   const { categoryId } = useParams()
+  const { addToCart, isInCart, setCartOpen } = useCart()
 
   const [category, setCategory] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  // Tracks which item's inline qty picker is open: itemId or null
+  const [pickerOpenId, setPickerOpenId] = useState(null)
+  // Tracks selected qty per item in the picker
+  const [pickerQty, setPickerQty] = useState({})
 
   // Filters
   const [typeFilter, setTypeFilter] = useState('ALL')
@@ -224,20 +231,67 @@ function CategoryItems() {
                       <p className="text-sm text-slate-500 font-body">{item.location || 'CIPD Lab'}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        disabled={item.quantity === 0}
-                        onClick={() => alert(`Add to Cart coming in Phase 6!\n\nItem: ${item.name}\nQuantity available: ${item.quantity}`)}
-                        className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl transition-colors font-body cursor-pointer ${
-                          item.quantity === 0
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-cyan-600 text-white hover:bg-cyan-700'
-                        }`}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        {item.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-                      </button>
+                      {item.quantity === 0 ? (
+                        <span className="inline-flex items-center px-4 py-2 text-xs font-medium rounded-xl bg-slate-100 text-slate-400 font-body">
+                          Out of Stock
+                        </span>
+                      ) : isInCart(item.id) ? (
+                        /* Already in cart — show green "In Cart" button that opens sidebar */
+                        <button
+                          onClick={() => setCartOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors font-body cursor-pointer"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          In Cart
+                        </button>
+                      ) : pickerOpenId === item.id ? (
+                        /* Inline qty picker */
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => setPickerQty((p) => ({ ...p, [item.id]: Math.max(1, (p[item.id] || 1) - 1) }))}
+                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-sm font-body cursor-pointer"
+                          >−</button>
+                          <span className="w-6 text-center text-sm font-semibold text-slate-900 font-body">
+                            {pickerQty[item.id] || 1}
+                          </span>
+                          <button
+                            onClick={() => setPickerQty((p) => ({ ...p, [item.id]: Math.min(item.quantity, (p[item.id] || 1) + 1) }))}
+                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-sm font-body cursor-pointer"
+                          >+</button>
+                          <button
+                            onClick={() => {
+                              addToCart(item, pickerQty[item.id] || 1)
+                              setPickerOpenId(null)
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-body cursor-pointer"
+                          >Add</button>
+                          <button
+                            onClick={() => setPickerOpenId(null)}
+                            className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                            aria-label="Cancel"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        /* Default Add to Cart button — opens inline picker */
+                        <button
+                          onClick={() => {
+                            setPickerOpenId(item.id)
+                            setPickerQty((p) => ({ ...p, [item.id]: 1 }))
+                          }}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-body cursor-pointer"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Add to Cart
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -262,17 +316,28 @@ function CategoryItems() {
                   <span className={`text-sm font-semibold font-body px-2.5 py-0.5 rounded-lg ${qtyColor(item.quantity)}`}>
                     Qty: {item.quantity}
                   </span>
-                  <button
-                    disabled={item.quantity === 0}
-                    onClick={() => alert(`Add to Cart coming in Phase 6!\n\nItem: ${item.name}`)}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl transition-colors font-body cursor-pointer ${
-                      item.quantity === 0
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-cyan-600 text-white hover:bg-cyan-700'
-                    }`}
-                  >
-                    {item.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-                  </button>
+                  {item.quantity === 0 ? (
+                    <span className="text-xs text-slate-400 font-body">Out of Stock</span>
+                  ) : isInCart(item.id) ? (
+                    <button
+                      onClick={() => setCartOpen(true)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors font-body cursor-pointer"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      In Cart
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        addToCart(item, 1)
+                      }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-body cursor-pointer"
+                    >
+                      Add to Cart
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

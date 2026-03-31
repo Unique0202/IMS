@@ -23,6 +23,7 @@ const { errorHandler } = require('./middleware/errorHandler')
 
 const authRoutes = require('./routes/auth')
 const inventoryRoutes = require('./routes/inventory')
+const requestRoutes = require('./routes/requests')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -55,6 +56,9 @@ app.use('/api/auth', authRoutes)
 // Inventory routes: categories, items, search
 app.use('/api/inventory', inventoryRoutes)
 
+// Request routes: submit, mine, all (admin)
+app.use('/api/requests', requestRoutes)
+
 // ===== ERROR HANDLER (must be last) =====
 app.use(errorHandler)
 
@@ -63,5 +67,6 @@ app.listen(PORT, () => {
   console.log(`\n  CIPD IMS Backend running at http://localhost:${PORT}`)
   console.log(`  Health check: http://localhost:${PORT}/api/health`)
   console.log(`  Auth routes:  POST /api/auth/signup, POST /api/auth/login, GET /api/auth/me`)
-  console.log(`  Inventory:    GET /api/inventory/categories, /categories/:id, /items/:id, /search?q=\n`)
+  console.log(`  Inventory:    GET /api/inventory/categories, /categories/:id, /items/:id, /search?q=`)
+  console.log(`  Requests:     POST /api/requests, GET /api/requests/mine, GET /api/requests/all\n`)
 })

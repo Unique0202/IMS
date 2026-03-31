@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import { useNavigate } from 'react-router-dom'
 
 /**
@@ -13,6 +14,7 @@ import { useNavigate } from 'react-router-dom'
  */
 function Navbar({ sidebarOpen, onToggleSidebar }) {
   const { user, logout, isAdmin } = useAuth()
+  const { cartTotal, setCartOpen } = useCart()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -46,15 +48,23 @@ function Navbar({ sidebarOpen, onToggleSidebar }) {
 
       {/* Right side: user info + actions */}
       <div className="flex items-center gap-3">
-        {/* Cart icon — student only (wired in Phase 6) */}
+        {/* Cart icon — student only, shows live item count */}
         {!isAdmin() && (
           <button
+            onClick={() => setCartOpen(true)}
             className="relative text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            title="Cart (coming in Phase 6)"
+            title="Open cart"
+            aria-label={`Cart — ${cartTotal} items`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
             </svg>
+            {/* Badge — only shown when cart has items */}
+            {cartTotal > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 font-body">
+                {cartTotal > 99 ? '99+' : cartTotal}
+              </span>
+            )}
           </button>
         )}
 

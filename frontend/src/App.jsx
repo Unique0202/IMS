@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import StudentDashboard from './pages/student/Dashboard'
 import StudentInventory from './pages/student/Inventory'
 import CategoryItems from './pages/student/CategoryItems'
+import MyRequests from './pages/student/MyRequests'
 import AdminDashboard from './pages/admin/Dashboard'
 import Placeholder from './pages/Placeholder'
 
@@ -65,8 +66,8 @@ function App() {
         <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="inventory" element={<StudentInventory />} />
         <Route path="inventory/:categoryId" element={<CategoryItems />} />
-        <Route path="cart" element={<Placeholder title="My Cart" message="Coming in Phase 6" />} />
-        <Route path="requests" element={<Placeholder title="My Requests" message="Coming in Phase 6" />} />
+        <Route path="cart" element={<Placeholder title="My Cart" message="Open the cart from the navbar icon" />} />
+        <Route path="requests" element={<MyRequests />} />
         <Route path="profile" element={<Placeholder title="My Profile" message="Coming in Phase 9" />} />
       </Route>
 

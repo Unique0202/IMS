@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
+import CartSidebar from './CartSidebar'
 
 /**
  * Layout component — the app shell for all authenticated pages.
@@ -39,6 +40,9 @@ function Layout() {
 
       {/* Fixed left sidebar */}
       <Sidebar isOpen={sidebarOpen} />
+
+      {/* Cart sidebar — slides in from right for students */}
+      <CartSidebar />
 
       {/* Main content area — offset by navbar height and sidebar width */}
       <main
