@@ -3,25 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import api from '../../utils/api'
 import { useCart } from '../../context/CartContext'
 
-/**
- * Category Items page — shows all items within a single category.
- *
- * HOW IT WORKS:
- *   1. Reads categoryId from the URL via useParams()
- *   2. Fetches GET /api/inventory/categories/:id
- *   3. Renders items as a table (desktop) or card list (mobile)
- *   4. Includes filters: item type (Consumable/Returnable) and sort
- *
- * useParams() EXPLAINED:
- *   React Router extracts the :categoryId part from the URL.
- *   URL: /student/inventory/3  →  useParams() returns { categoryId: "3" }
- *   Note: it's always a string, so we parseInt() it.
- *
- * ADD TO CART (Phase 6):
- *   Each item row has an "Add to Cart" button that currently shows an alert.
- *   Phase 6 will replace this with CartContext integration.
- */
-
 function CategoryItems() {
   const { categoryId } = useParams()
   const { addToCart, isInCart, setCartOpen } = useCart()
@@ -31,9 +12,8 @@ function CategoryItems() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Tracks which item's inline qty picker is open: itemId or null
+  // Which item's qty picker is open
   const [pickerOpenId, setPickerOpenId] = useState(null)
-  // Tracks selected qty per item in the picker
   const [pickerQty, setPickerQty] = useState({})
 
   // Filters
@@ -41,16 +21,13 @@ function CategoryItems() {
   const [sortField, setSortField] = useState('name')
   const [sortOrder, setSortOrder] = useState('asc')
 
-  // Fetch items when category/filters change
   useEffect(() => {
     const fetchItems = async () => {
       setLoading(true)
       setError('')
       try {
         let url = `/api/inventory/categories/${categoryId}?sort=${sortField}&order=${sortOrder}`
-        if (typeFilter !== 'ALL') {
-          url += `&type=${typeFilter}`
-        }
+        if (typeFilter !== 'ALL') url += `&type=${typeFilter}`
         const res = await api.get(url)
         if (res.data.success) {
           setCategory(res.data.data.category)
@@ -65,64 +42,46 @@ function CategoryItems() {
     fetchItems()
   }, [categoryId, typeFilter, sortField, sortOrder])
 
-  // Item image placeholder — SVG icon based on type
-  const ItemImage = ({ item }) => {
-    if (item.imageUrl) {
-      return (
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0"
-          onError={(e) => {
-            // If URL fails to load, swap to placeholder
-            e.target.style.display = 'none'
-            e.target.nextSibling.style.display = 'flex'
-          }}
-        />
-      )
-    }
-    const iconColor = item.type === 'RETURNABLE'
-      ? 'bg-blue-50 text-blue-400'
-      : item.type === 'CONSUMABLE'
-      ? 'bg-amber-50 text-amber-400'
-      : 'bg-slate-100 text-slate-400'
-
-    return (
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${iconColor}`}>
-        {item.type === 'RETURNABLE' ? (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-          </svg>
-        ) : item.type === 'CONSUMABLE' ? (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        )}
-      </div>
-    )
-  }
-
-  // Type badge styling
   const typeBadge = (type) => {
     switch (type) {
-      case 'RETURNABLE':
-        return 'bg-blue-50 text-blue-700 border-blue-200'
-      case 'CONSUMABLE':
-        return 'bg-amber-50 text-amber-700 border-amber-200'
-      default:
-        return 'bg-slate-50 text-slate-600 border-slate-200'
+      case 'RETURNABLE': return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'CONSUMABLE': return 'bg-amber-50 text-amber-700 border-amber-200'
+      default:           return 'bg-slate-50 text-slate-600 border-slate-200'
     }
   }
 
-  // Quantity color (red if low stock)
   const qtyColor = (qty) => {
-    if (qty === 0) return 'text-red-600 bg-red-50'
-    if (qty <= 5) return 'text-amber-600 bg-amber-50'
-    return 'text-emerald-600 bg-emerald-50'
+    if (qty === 0)  return 'text-red-600'
+    if (qty <= 5)   return 'text-amber-600'
+    return 'text-emerald-600'
+  }
+
+  // Placeholder icon inside the image area when no imageUrl
+  const PlaceholderImage = ({ type }) => {
+    const styles = {
+      RETURNABLE: { bg: 'bg-blue-50',   icon: 'text-blue-300' },
+      CONSUMABLE: { bg: 'bg-amber-50',  icon: 'text-amber-300' },
+      NA:         { bg: 'bg-slate-100', icon: 'text-slate-300' },
+    }
+    const s = styles[type] || styles.NA
+    return (
+      <div className={`w-full h-full flex flex-col items-center justify-center gap-2 ${s.bg}`}>
+        {type === 'RETURNABLE' ? (
+          <svg className={`w-10 h-10 ${s.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
+        ) : type === 'CONSUMABLE' ? (
+          <svg className={`w-10 h-10 ${s.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        ) : (
+          <svg className={`w-10 h-10 ${s.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        )}
+        <span className={`text-xs font-medium font-body ${s.icon}`}>No Image</span>
+      </div>
+    )
   }
 
   if (loading && !category) {
@@ -150,15 +109,13 @@ function CategoryItems() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 font-heading">{category?.name}</h1>
-          <p className="text-slate-500 mt-1 font-body">
-            {items.length} {items.length === 1 ? 'item' : 'items'} found
+          <p className="text-slate-500 mt-1 font-body text-sm">
+            {items.length} {items.length === 1 ? 'item' : 'items'} available
           </p>
         </div>
-
-        {/* Back button */}
         <Link
           to="/student/inventory"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors font-body"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors font-body w-fit"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -169,7 +126,6 @@ function CategoryItems() {
 
       {/* Filters bar */}
       <div className="flex flex-wrap items-center gap-3 mb-6 bg-white border border-slate-200 rounded-2xl p-4">
-        {/* Type filter */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 font-body uppercase tracking-wider">Type:</span>
           {['ALL', 'RETURNABLE', 'CONSUMABLE'].map((type) => (
@@ -177,9 +133,7 @@ function CategoryItems() {
               key={type}
               onClick={() => setTypeFilter(type)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer font-body ${
-                typeFilter === type
-                  ? 'bg-cyan-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                typeFilter === type ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {type === 'ALL' ? 'All' : type.charAt(0) + type.slice(1).toLowerCase()}
@@ -189,7 +143,6 @@ function CategoryItems() {
 
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
-        {/* Sort */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 font-body uppercase tracking-wider">Sort:</span>
           <select
@@ -203,7 +156,6 @@ function CategoryItems() {
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
             className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-            title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
           >
             <svg className={`w-4 h-4 text-slate-600 transition-transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
@@ -219,7 +171,7 @@ function CategoryItems() {
         </div>
       )}
 
-      {/* Items table (desktop) / card list (mobile) */}
+      {/* Empty state */}
       {items.length === 0 && !loading ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl">
           <svg className="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,169 +179,151 @@ function CategoryItems() {
           </svg>
           <p className="text-slate-500 font-body">No items found with the current filters</p>
           {typeFilter !== 'ALL' && (
-            <button
-              onClick={() => setTypeFilter('ALL')}
-              className="mt-3 text-sm text-cyan-600 hover:text-cyan-700 font-medium font-body cursor-pointer"
-            >
+            <button onClick={() => setTypeFilter('ALL')} className="mt-3 text-sm text-cyan-600 hover:text-cyan-700 font-medium font-body cursor-pointer">
               Clear filter
             </button>
           )}
         </div>
       ) : (
-        <>
-          {/* Desktop table */}
-          <div className="hidden md:block bg-white border border-slate-200 rounded-2xl overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3.5 font-body">Item Name</th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3.5 font-body">Type</th>
-                  <th className="text-center text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3.5 font-body">Available</th>
-                  <th className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3.5 font-body">Location</th>
-                  <th className="text-right text-xs font-medium text-slate-500 uppercase tracking-wider px-6 py-3.5 font-body">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, idx) => (
-                  <tr
-                    key={item.id}
-                    className={`border-b border-slate-50 hover:bg-slate-50/50 transition-colors ${idx === items.length - 1 ? 'border-b-0' : ''}`}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <ItemImage item={item} />
-                        <p className="text-sm font-medium text-slate-900 font-body">{item.name}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium font-body ${typeBadge(item.type)}`}>
-                        {item.type === 'RETURNABLE' ? 'Returnable' : item.type === 'CONSUMABLE' ? 'Consumable' : 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center justify-center text-sm font-semibold font-body px-2.5 py-0.5 rounded-lg ${qtyColor(item.quantity)}`}>
-                        {item.quantity}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-slate-500 font-body">{item.location || 'CIPD Lab'}</p>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {item.quantity === 0 ? (
-                        <span className="inline-flex items-center px-4 py-2 text-xs font-medium rounded-xl bg-slate-100 text-slate-400 font-body">
-                          Out of Stock
-                        </span>
-                      ) : isInCart(item.id) ? (
-                        /* Already in cart — show green "In Cart" button that opens sidebar */
-                        <button
-                          onClick={() => setCartOpen(true)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors font-body cursor-pointer"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          In Cart
-                        </button>
-                      ) : pickerOpenId === item.id ? (
-                        /* Inline qty picker */
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            onClick={() => setPickerQty((p) => ({ ...p, [item.id]: Math.max(1, (p[item.id] || 1) - 1) }))}
-                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-sm font-body cursor-pointer"
-                          >−</button>
-                          <span className="w-6 text-center text-sm font-semibold text-slate-900 font-body">
-                            {pickerQty[item.id] || 1}
-                          </span>
-                          <button
-                            onClick={() => setPickerQty((p) => ({ ...p, [item.id]: Math.min(item.quantity, (p[item.id] || 1) + 1) }))}
-                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-sm font-body cursor-pointer"
-                          >+</button>
-                          <button
-                            onClick={() => {
-                              addToCart(item, pickerQty[item.id] || 1)
-                              setPickerOpenId(null)
-                            }}
-                            className="px-3 py-1.5 text-xs font-medium rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-body cursor-pointer"
-                          >Add</button>
-                          <button
-                            onClick={() => setPickerOpenId(null)}
-                            className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-                            aria-label="Cancel"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
-                        /* Default Add to Cart button — opens inline picker */
-                        <button
-                          onClick={() => {
-                            setPickerOpenId(item.id)
-                            setPickerQty((p) => ({ ...p, [item.id]: 1 }))
-                          }}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-body cursor-pointer"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          Add to Cart
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        /* Product card grid — 2 cols on mobile, 3 on md, 4 on xl */
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {items.map((item) => {
+            const inCart = isInCart(item.id)
+            const pickerOpen = pickerOpenId === item.id
+            const outOfStock = item.quantity === 0
 
-          {/* Mobile card list */}
-          <div className="md:hidden flex flex-col gap-3">
-            {items.map((item) => (
-              <div key={item.id} className="bg-white border border-slate-200 rounded-2xl p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-start gap-3">
-                    <ItemImage item={item} />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 font-body">{item.name}</p>
-                      <p className="text-xs text-slate-500 font-body mt-0.5">{item.location || 'CIPD Lab'}</p>
-                    </div>
+            return (
+              <div
+                key={item.id}
+                className={`bg-white border rounded-2xl overflow-hidden flex flex-col transition-shadow hover:shadow-md ${
+                  outOfStock ? 'border-slate-200 opacity-70' : 'border-slate-200'
+                }`}
+              >
+                {/* Image area — square, fixed height */}
+                <div className="relative w-full aspect-square overflow-hidden bg-slate-50">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-contain p-3"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.parentNode.querySelector('.placeholder-fallback').style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  {/* Placeholder — shown when no imageUrl or image fails */}
+                  <div
+                    className="placeholder-fallback w-full h-full absolute inset-0"
+                    style={{ display: item.imageUrl ? 'none' : 'flex' }}
+                  >
+                    <PlaceholderImage type={item.type} />
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium font-body ${typeBadge(item.type)}`}>
-                    {item.type === 'RETURNABLE' ? 'Returnable' : item.type === 'CONSUMABLE' ? 'Consumable' : 'N/A'}
-                  </span>
+
+                  {/* Out of stock overlay */}
+                  {outOfStock && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                      <span className="bg-red-100 text-red-600 text-xs font-semibold px-3 py-1 rounded-full font-body border border-red-200">
+                        Out of Stock
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Type badge — top left corner */}
+                  <div className="absolute top-2 left-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium font-body ${typeBadge(item.type)}`}>
+                      {item.type === 'RETURNABLE' ? 'Returnable' : item.type === 'CONSUMABLE' ? 'Consumable' : 'N/A'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm font-semibold font-body px-2.5 py-0.5 rounded-lg ${qtyColor(item.quantity)}`}>
-                    Qty: {item.quantity}
-                  </span>
-                  {item.quantity === 0 ? (
-                    <span className="text-xs text-slate-400 font-body">Out of Stock</span>
-                  ) : isInCart(item.id) ? (
+
+                {/* Card body */}
+                <div className="flex flex-col flex-1 p-3 gap-2">
+                  {/* Item name */}
+                  <p className="text-sm font-semibold text-slate-800 font-body leading-snug line-clamp-2">
+                    {item.name}
+                  </p>
+
+                  {/* Quantity + location row */}
+                  <div className="flex items-center justify-between text-xs font-body mt-auto">
+                    <span className={`font-semibold ${qtyColor(item.quantity)}`}>
+                      {item.quantity} in stock
+                    </span>
+                    {item.location && (
+                      <span className="text-slate-400 truncate ml-1">{item.location}</span>
+                    )}
+                  </div>
+
+                  {/* Add to Cart / In Cart / Qty picker */}
+                  {inCart ? (
                     <button
                       onClick={() => setCartOpen(true)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors font-body cursor-pointer"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors font-body cursor-pointer"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       In Cart
                     </button>
+                  ) : pickerOpen ? (
+                    <div className="flex flex-col gap-2">
+                      {/* Qty selector */}
+                      <div className="flex items-center justify-between bg-slate-50 rounded-xl px-2 py-1">
+                        <button
+                          onClick={() => setPickerQty((p) => ({ ...p, [item.id]: Math.max(1, (p[item.id] || 1) - 1) }))}
+                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer shadow-sm"
+                        >−</button>
+                        <span className="text-sm font-semibold text-slate-900 font-body w-8 text-center">
+                          {pickerQty[item.id] || 1}
+                        </span>
+                        <button
+                          onClick={() => setPickerQty((p) => ({ ...p, [item.id]: Math.min(item.quantity, (p[item.id] || 1) + 1) }))}
+                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer shadow-sm"
+                        >+</button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => {
+                            addToCart(item, pickerQty[item.id] || 1)
+                            setPickerOpenId(null)
+                          }}
+                          className="flex-1 py-2 text-xs font-semibold rounded-xl text-white transition-colors font-body cursor-pointer"
+                          style={{ backgroundColor: 'var(--color-primary)' }}
+                        >
+                          Add
+                        </button>
+                        <button
+                          onClick={() => setPickerOpenId(null)}
+                          className="px-3 py-2 text-xs rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors font-body cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <button
+                      disabled={outOfStock}
                       onClick={() => {
-                        addToCart(item, 1)
+                        setPickerOpenId(item.id)
+                        setPickerQty((p) => ({ ...p, [item.id]: 1 }))
                       }}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-body cursor-pointer"
+                      className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-xl transition-colors font-body ${
+                        outOfStock
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          : 'bg-cyan-600 text-white hover:bg-cyan-700 cursor-pointer'
+                      }`}
                     >
-                      Add to Cart
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+                      </svg>
+                      {outOfStock ? 'Out of Stock' : 'Add to Cart'}
                     </button>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+            )
+          })}
+        </div>
       )}
     </div>
   )
