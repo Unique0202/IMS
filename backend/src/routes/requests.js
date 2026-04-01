@@ -198,4 +198,232 @@ router.get('/all', authenticate, authorizeAdmin, async (req, res, next) => {
   }
 })
 
+/**
+ * PATCH /api/requests/:id/approve  (admin only)
+ *
+ * Approves a PENDING request.
+ * Sets collectionDeadline — the window in which the student must collect the items.
+ * Default: 24 hours from now. Admin can pass a custom ISO datetime in the body.
+ *
+ * WHY SET A DEADLINE?
+ *   If the student never collects, the slot stays "approved" forever blocking
+ *   inventory. A deadline lets the admin auto-expire or manually decline later.
+ */
+router.patch('/:id/approve', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const requestId = parseInt(req.params.id)
+    if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
+
+    const existing = await prisma.request.findUnique({ where: { id: requestId } })
+    if (!existing) throw createError(404, 'Request not found', 'NOT_FOUND')
+    if (existing.status !== 'PENDING') {
+      throw createError(400, `Cannot approve a request with status ${existing.status}`, 'INVALID_STATUS')
+    }
+
+    // Default deadline: 24 hours from now. Admin can override.
+    const collectionDeadline = req.body.collectionDeadline
+      ? new Date(req.body.collectionDeadline)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    const updated = await prisma.request.update({
+      where: { id: requestId },
+      data: { status: 'APPROVED', collectionDeadline },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { include: { item: { select: { id: true, name: true, type: true } } } },
+      },
+    })
+
+    res.json({ success: true, data: { request: updated } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/requests/:id/decline  (admin only)
+ *
+ * Declines a PENDING or APPROVED request.
+ * Requires a reason — students will see this on their Requests page.
+ */
+router.patch('/:id/decline', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const requestId = parseInt(req.params.id)
+    if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
+
+    const { declineReason } = req.body
+    if (!declineReason || declineReason.trim().length === 0) {
+      throw createError(400, 'Decline reason is required', 'MISSING_REASON')
+    }
+
+    const existing = await prisma.request.findUnique({ where: { id: requestId } })
+    if (!existing) throw createError(404, 'Request not found', 'NOT_FOUND')
+    if (!['PENDING', 'APPROVED'].includes(existing.status)) {
+      throw createError(400, `Cannot decline a request with status ${existing.status}`, 'INVALID_STATUS')
+    }
+
+    const updated = await prisma.request.update({
+      where: { id: requestId },
+      data: { status: 'DECLINED', declineReason: declineReason.trim() },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { include: { item: { select: { id: true, name: true, type: true } } } },
+      },
+    })
+
+    res.json({ success: true, data: { request: updated } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/requests/:id/issue  (admin only)
+ *
+ * Marks an APPROVED request as ISSUED — admin physically hands items to student.
+ *
+ * WHAT HAPPENS IN THE TRANSACTION:
+ *   1. Each requested item's quantity is REDUCED by the requested amount
+ *   2. A Transaction record is created (tracks who got what, when, expected return)
+ *   3. Request status is set to ISSUED
+ *
+ * WHY REDUCE QUANTITY HERE AND NOT AT APPROVAL?
+ *   Approval just means "we'll give it to you". Issuance means "we gave it to you".
+ *   Reducing at approval would block the item even if the student never shows up.
+ *
+ * STOCK CHECK:
+ *   We re-validate that the current quantity is still sufficient at the moment of
+ *   issuance — another admin could have issued the same item in the meantime.
+ */
+router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const requestId = parseInt(req.params.id)
+    if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
+
+    const { expectedReturnAt, conditionOnIssue } = req.body
+
+    const existing = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { include: { item: true } },
+      },
+    })
+    if (!existing) throw createError(404, 'Request not found', 'NOT_FOUND')
+    if (existing.status !== 'APPROVED') {
+      throw createError(400, `Cannot issue a request with status ${existing.status}`, 'INVALID_STATUS')
+    }
+
+    // Re-validate stock for all RETURNABLE items
+    for (const ri of existing.items) {
+      if (ri.item.type === 'RETURNABLE' && ri.item.quantity < ri.quantity) {
+        throw createError(400, `Insufficient stock for "${ri.item.name}": ${ri.item.quantity} available, ${ri.quantity} needed`, 'INSUFFICIENT_STOCK')
+      }
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      // Reduce quantity for each item
+      for (const ri of existing.items) {
+        await tx.item.update({
+          where: { id: ri.itemId },
+          data: { quantity: { decrement: ri.quantity } },
+        })
+      }
+
+      // Create transaction record
+      await tx.transaction.create({
+        data: {
+          requestId,
+          issuedTo: existing.user.name,
+          conditionOnIssue: conditionOnIssue?.trim() || null,
+          expectedReturnAt: expectedReturnAt ? new Date(expectedReturnAt) : null,
+        },
+      })
+
+      // Update request status
+      return tx.request.update({
+        where: { id: requestId },
+        data: { status: 'ISSUED' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          items: { include: { item: { select: { id: true, name: true, type: true, quantity: true } } } },
+          transaction: true,
+        },
+      })
+    })
+
+    res.json({ success: true, data: { request: updated } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/requests/:id/return  (admin only)
+ *
+ * Marks an ISSUED request as RETURNED — student brought items back.
+ *
+ * WHAT HAPPENS IN THE TRANSACTION:
+ *   1. Each RETURNABLE item's quantity is RESTORED (incremented back)
+ *      Note: CONSUMABLE items are NOT restored — they were kept by the student.
+ *   2. Transaction is updated with returnedAt and condition notes
+ *   3. Request status is set to RETURNED
+ */
+router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const requestId = parseInt(req.params.id)
+    if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
+
+    const { conditionOnReturn } = req.body
+
+    const existing = await prisma.request.findUnique({
+      where: { id: requestId },
+      include: {
+        items: { include: { item: true } },
+        transaction: true,
+      },
+    })
+    if (!existing) throw createError(404, 'Request not found', 'NOT_FOUND')
+    if (existing.status !== 'ISSUED') {
+      throw createError(400, `Cannot return a request with status ${existing.status}`, 'INVALID_STATUS')
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      // Restore quantity — only for RETURNABLE items
+      for (const ri of existing.items) {
+        if (ri.item.type === 'RETURNABLE') {
+          await tx.item.update({
+            where: { id: ri.itemId },
+            data: { quantity: { increment: ri.quantity } },
+          })
+        }
+      }
+
+      // Update transaction record
+      await tx.transaction.update({
+        where: { requestId },
+        data: {
+          returnedAt: new Date(),
+          conditionOnReturn: conditionOnReturn?.trim() || null,
+        },
+      })
+
+      // Update request status
+      return tx.request.update({
+        where: { id: requestId },
+        data: { status: 'RETURNED' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          items: { include: { item: { select: { id: true, name: true, type: true, quantity: true } } } },
+          transaction: true,
+        },
+      })
+    })
+
+    res.json({ success: true, data: { request: updated } })
+  } catch (error) {
+    next(error)
+  }
+})
+
 module.exports = router

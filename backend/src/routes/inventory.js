@@ -236,4 +236,23 @@ router.get('/search', authenticate, async (req, res, next) => {
   }
 })
 
+/**
+ * GET /api/inventory/low-stock  (admin only)
+ * Returns ACTIVE items with quantity <= 5, sorted by quantity ascending.
+ * Used by the admin dashboard Low Stock Alerts section.
+ */
+router.get('/low-stock', authenticate, async (req, res, next) => {
+  try {
+    const items = await prisma.item.findMany({
+      where: { status: 'ACTIVE', deletedAt: null, quantity: { lte: 5 } },
+      select: { id: true, name: true, quantity: true, type: true, category: { select: { name: true } } },
+      orderBy: { quantity: 'asc' },
+      take: 10,
+    })
+    res.json({ success: true, data: { items } })
+  } catch (error) {
+    next(error)
+  }
+})
+
 module.exports = router

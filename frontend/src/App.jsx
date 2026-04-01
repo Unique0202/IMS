@@ -9,6 +9,7 @@ import StudentInventory from './pages/student/Inventory'
 import CategoryItems from './pages/student/CategoryItems'
 import MyRequests from './pages/student/MyRequests'
 import AdminDashboard from './pages/admin/Dashboard'
+import AdminRequests from './pages/admin/Requests'
 import Placeholder from './pages/Placeholder'
 
 /**
@@ -83,7 +84,7 @@ function App() {
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="inventory" element={<Placeholder title="Inventory" message="Coming in Phase 8" />} />
-        <Route path="requests" element={<Placeholder title="Requests" message="Coming in Phase 7" />} />
+        <Route path="requests" element={<AdminRequests />} />
         <Route path="issued" element={<Placeholder title="Issued Items" message="Coming in Phase 8" />} />
         <Route path="add-item" element={<Placeholder title="Add Item" message="Coming in Phase 8" />} />
       </Route>
