@@ -195,7 +195,7 @@ function StudentInventory() {
               {searchResults.map((item) => (
                 <Link
                   key={item.id}
-                  to={`/student/inventory/${item.category.id}`}
+                  to={`/student/inventory/${item.category.id}?highlight=${item.id}`}
                   className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 rounded-xl transition-colors"
                 >
                   <div>

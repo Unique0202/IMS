@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import api from '../../utils/api'
 import { useCart } from '../../context/CartContext'
 
 function CategoryItems() {
   const { categoryId } = useParams()
+  const [searchParams] = useSearchParams()
+  const highlightId = searchParams.get('highlight') ? parseInt(searchParams.get('highlight')) : null
+  const highlightRef = useRef(null)
   const { addToCart, isInCart, setCartOpen } = useCart()
 
   const [category, setCategory] = useState(null)
@@ -41,6 +44,18 @@ function CategoryItems() {
     }
     fetchItems()
   }, [categoryId, typeFilter, sortField, sortOrder])
+
+  // Scroll to and flash-highlight the item from search
+  useEffect(() => {
+    if (!highlightId || !highlightRef.current) return
+    const el = highlightRef.current
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('ring-2', 'ring-cyan-400', 'ring-offset-2')
+    const timer = setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-cyan-400', 'ring-offset-2')
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [highlightId, items])
 
   const typeBadge = (type) => {
     switch (type) {
@@ -195,7 +210,8 @@ function CategoryItems() {
             return (
               <div
                 key={item.id}
-                className={`bg-white border rounded-2xl overflow-hidden flex flex-col transition-shadow hover:shadow-md ${
+                ref={item.id === highlightId ? highlightRef : null}
+                className={`bg-white border rounded-2xl overflow-hidden flex flex-col transition-all hover:shadow-md ${
                   outOfStock ? 'border-slate-200 opacity-70' : 'border-slate-200'
                 }`}
               >
