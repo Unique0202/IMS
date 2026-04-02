@@ -367,11 +367,11 @@ function ReturnModal({ request, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  // Per-item returned quantities — default to full issued qty
+  // Per-item returned quantities — default to actual issued qty (not requested qty)
   const [returnedQtys, setReturnedQtys] = useState(() => {
     const init = {}
     request.items.forEach((ri) => {
-      init[ri.item.id] = ri.quantity
+      init[ri.item.id] = ri.issuedQuantity ?? ri.quantity
     })
     return init
   })
@@ -410,6 +410,7 @@ function ReturnModal({ request, onClose, onSuccess }) {
           </p>
           <div className="space-y-2">
             {request.items.map((ri) => {
+              const issued = ri.issuedQuantity ?? ri.quantity
               const qty = returnedQtys[ri.item.id] ?? 0
               const notReturned = qty === 0
 
@@ -421,10 +422,13 @@ function ReturnModal({ request, onClose, onSuccess }) {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800 font-body">{ri.item.name}</p>
                       <p className="text-xs font-body mt-0.5 text-slate-500">
-                        Issued: {ri.quantity}
+                        Issued: {issued}
+                        {ri.issuedQuantity != null && ri.issuedQuantity < ri.quantity && (
+                          <span className="ml-1 text-amber-600">(requested {ri.quantity})</span>
+                        )}
                       </p>
                     </div>
-                    {/* Qty stepper */}
+                    {/* Qty stepper — capped at issued qty */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => setQty(ri.item.id, Math.max(0, qty - 1))}
@@ -433,16 +437,16 @@ function ReturnModal({ request, onClose, onSuccess }) {
                       <input
                         type="number"
                         min={0}
-                        max={ri.quantity}
+                        max={issued}
                         value={qty}
                         onChange={(e) => {
-                          const v = Math.max(0, Math.min(ri.quantity, parseInt(e.target.value) || 0))
+                          const v = Math.max(0, Math.min(issued, parseInt(e.target.value) || 0))
                           setQty(ri.item.id, v)
                         }}
                         className="w-10 text-center text-sm font-semibold font-body border border-slate-200 rounded-lg py-1 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
                       />
                       <button
-                        onClick={() => setQty(ri.item.id, Math.min(ri.quantity, qty + 1))}
+                        onClick={() => setQty(ri.item.id, Math.min(issued, qty + 1))}
                         className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer"
                       >+</button>
                     </div>
@@ -450,8 +454,8 @@ function ReturnModal({ request, onClose, onSuccess }) {
                   {notReturned && (
                     <p className="text-xs text-amber-700 font-body mt-1.5 font-medium">Not returned — stock will not be restored</p>
                   )}
-                  {!notReturned && qty < ri.quantity && (
-                    <p className="text-xs text-emerald-700 font-body mt-1.5">Partial return: {qty} of {ri.quantity}</p>
+                  {!notReturned && qty < issued && (
+                    <p className="text-xs text-emerald-700 font-body mt-1.5">Partial return: {qty} of {issued}</p>
                   )}
                 </div>
               )

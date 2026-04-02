@@ -121,13 +121,15 @@ enum RequestStatus {
 
 // ===== REQUEST ITEM =====
 // Junction table: which items and how many are in each request
+// issuedQuantity: set when admin issues (may be less than quantity if partial issue)
 model RequestItem {
-  id        Int     @id @default(autoincrement())
-  quantity  Int
-  request   Request @relation(fields: [requestId], references: [id])
-  requestId Int
-  item      Item    @relation(fields: [itemId], references: [id])
-  itemId    Int
+  id             Int     @id @default(autoincrement())
+  quantity       Int     // what the student requested
+  issuedQuantity Int?    // what the admin actually handed over (null until ISSUED)
+  request        Request @relation(fields: [requestId], references: [id])
+  requestId      Int
+  item           Item    @relation(fields: [itemId], references: [id])
+  itemId         Int
 }
 
 // ===== TRANSACTION =====

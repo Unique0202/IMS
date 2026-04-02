@@ -341,6 +341,7 @@ router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) 
 
     const updated = await prisma.$transaction(async (tx) => {
       // Decrement each item by the ACTUAL issued quantity (not the requested qty)
+      // Also save issuedQuantity on each RequestItem so return knows the real cap
       for (const ri of existing.items) {
         const issuedQty = issuedMap[ri.itemId] ?? ri.quantity
         if (issuedQty > 0) {
@@ -349,6 +350,10 @@ router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) 
             data: { quantity: { decrement: issuedQty } },
           })
         }
+        await tx.requestItem.update({
+          where: { id: ri.id },
+          data: { issuedQuantity: issuedQty },
+        })
       }
 
       // Create transaction record
@@ -418,14 +423,15 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
       }
     }
 
-    // Validate: returned qty must be 0 ≤ qty ≤ requested qty
+    // Validate: returned qty must be 0 ≤ qty ≤ issuedQuantity (not requested qty)
     for (const ri of existing.items) {
-      const returnedQty = returnedMap[ri.itemId] ?? ri.quantity
+      const cap = ri.issuedQuantity ?? ri.quantity
+      const returnedQty = returnedMap[ri.itemId] ?? cap
       if (returnedQty < 0) {
         throw createError(400, `Returned quantity cannot be negative for "${ri.item.name}"`, 'INVALID_QTY')
       }
-      if (returnedQty > ri.quantity) {
-        throw createError(400, `Cannot return more than was requested for "${ri.item.name}"`, 'EXCEEDS_REQUEST')
+      if (returnedQty > cap) {
+        throw createError(400, `Cannot return more than was issued for "${ri.item.name}"`, 'EXCEEDS_ISSUED')
       }
     }
 
@@ -433,7 +439,8 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
       // Restore quantity by the ACTUAL returned amount per item.
       // Items with returnedQty = 0 are not touched (kept by student / lost).
       for (const ri of existing.items) {
-        const returnedQty = returnedMap[ri.itemId] ?? ri.quantity
+        const cap = ri.issuedQuantity ?? ri.quantity
+        const returnedQty = returnedMap[ri.itemId] ?? cap
         if (returnedQty > 0) {
           await tx.item.update({
             where: { id: ri.itemId },
