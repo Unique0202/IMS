@@ -206,14 +206,12 @@ function IssueModal({ request, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const hasReturnables = request.items.some((ri) => ri.item.type === 'RETURNABLE')
-
   const handleSubmit = async () => {
     setSubmitting(true)
     setError('')
     try {
       await api.patch(`/api/requests/${request.id}/issue`, {
-        expectedReturnAt: hasReturnables ? new Date(expectedReturnAt).toISOString() : null,
+        expectedReturnAt: new Date(expectedReturnAt).toISOString(),
         conditionOnIssue: conditionOnIssue.trim() || null,
       })
       onSuccess()
@@ -234,28 +232,27 @@ function IssueModal({ request, onClose, onSuccess }) {
               <div key={ri.item.id} className="flex items-center justify-between">
                 <p className="text-sm font-body text-slate-800">{ri.item.name} ×{ri.quantity}</p>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${
-                  ri.item.type === 'RETURNABLE' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                  ri.item.type === 'CONSUMABLE' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
                 }`}>
-                  {ri.item.type === 'RETURNABLE' ? 'Return required' : 'Keep'}
+                  {ri.item.type === 'CONSUMABLE' ? 'Consumable' : 'Return required'}
                 </span>
               </div>
             ))}
           </div>
         </div>
 
-        {hasReturnables && (
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">
-              Expected Return Date
-            </label>
-            <input
-              type="datetime-local"
-              value={expectedReturnAt}
-              onChange={(e) => setExpectedReturnAt(e.target.value)}
-              className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 font-body focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">
+            Expected Return Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={expectedReturnAt}
+            onChange={(e) => setExpectedReturnAt(e.target.value)}
+            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 font-body focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-xs text-slate-400 font-body mt-1">Student will see this deadline on their Requests page</p>
+        </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">

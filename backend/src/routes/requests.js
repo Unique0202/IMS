@@ -389,15 +389,13 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Restore quantity — for RETURNABLE and NA items (not CONSUMABLE)
-      // NA means "not yet classified" — safer to restore than to lose the count
+      // Restore quantity for ALL items — the admin physically received them back.
+      // The admin is the authority on what was returned; we don't skip by type.
       for (const ri of existing.items) {
-        if (ri.item.type !== 'CONSUMABLE') {
-          await tx.item.update({
-            where: { id: ri.itemId },
-            data: { quantity: { increment: ri.quantity } },
-          })
-        }
+        await tx.item.update({
+          where: { id: ri.itemId },
+          data: { quantity: { increment: ri.quantity } },
+        })
       }
 
       // Update transaction record
