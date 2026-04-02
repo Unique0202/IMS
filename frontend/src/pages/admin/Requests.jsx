@@ -292,6 +292,7 @@ function IssueModal({ request, onClose, onSuccess }) {
 // ─── RETURN MODAL ─────────────────────────────────────────────────────────────
 function ReturnModal({ request, onClose, onSuccess }) {
   const [conditionOnReturn, setConditionOnReturn] = useState('')
+  const [returnedAt, setReturnedAt] = useState(new Date().toISOString().slice(0, 16))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -301,6 +302,7 @@ function ReturnModal({ request, onClose, onSuccess }) {
     try {
       await api.patch(`/api/requests/${request.id}/return`, {
         conditionOnReturn: conditionOnReturn.trim() || null,
+        returnedAt: new Date(returnedAt).toISOString(),
       })
       onSuccess()
     } catch (err) {
@@ -310,33 +312,49 @@ function ReturnModal({ request, onClose, onSuccess }) {
     }
   }
 
-  const returnables = request.items.filter((ri) => ri.item.type === 'RETURNABLE')
+  // Items that will get their stock restored (everything except CONSUMABLE)
+  const restoredItems = request.items.filter((ri) => ri.item.type !== 'CONSUMABLE')
 
   return (
     <ModalShell title="Mark as Returned" onClose={onClose}>
       <div className="space-y-4">
         <div className="bg-slate-50 rounded-xl p-3">
           <p className="text-xs text-slate-500 font-body mb-2">Returning from {request.user.name}</p>
-          {returnables.length > 0 ? (
-            <div className="space-y-1">
-              {returnables.map((ri) => (
-                <p key={ri.item.id} className="text-sm font-body text-slate-800">
+          <div className="space-y-1">
+            {request.items.map((ri) => (
+              <div key={ri.item.id} className="flex items-center justify-between">
+                <p className="text-sm font-body text-slate-800">
                   {ri.item.name} <span className="text-slate-500">×{ri.quantity}</span>
                 </p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500 font-body italic">All items were consumable — no physical return needed</p>
-          )}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${
+                  ri.item.type === 'CONSUMABLE' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {ri.item.type === 'CONSUMABLE' ? 'Kept' : 'Returning'}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {returnables.length > 0 && (
+        {restoredItems.length > 0 && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
             <p className="text-xs text-emerald-700 font-body font-medium">
-              Stock will be restored for {returnables.length} returnable item{returnables.length > 1 ? 's' : ''}
+              Stock will be restored for {restoredItems.length} item{restoredItems.length > 1 ? 's' : ''}
             </p>
           </div>
         )}
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">
+            Date & Time of Return <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={returnedAt}
+            onChange={(e) => setReturnedAt(e.target.value)}
+            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 font-body focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">

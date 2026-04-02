@@ -1,5 +1,7 @@
-import { NavLink } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../utils/api'
 
 /**
  * Sidebar navigation — role-based links for student vs admin.
@@ -92,7 +94,7 @@ const adminLinks = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
       </svg>
     ),
-    badge: 5, // Dummy pending count — wired to real data in Phase 7
+    badge: true, // Signals this link shows the live pending count
   },
   {
     to: '/admin/issued',
@@ -116,6 +118,22 @@ const adminLinks = [
 
 function Sidebar({ isOpen }) {
   const { isAdmin } = useAuth()
+  const location = useLocation()
+  const [pendingCount, setPendingCount] = useState(0)
+
+  // Refetch pending count every time the route changes (so it updates after admin acts)
+  useEffect(() => {
+    if (!isAdmin()) return
+    api.get('/api/requests/all')
+      .then((res) => {
+        if (res.data.success) {
+          const count = res.data.data.requests.filter((r) => r.status === 'PENDING').length
+          setPendingCount(count)
+        }
+      })
+      .catch(() => {})
+  }, [location.pathname, isAdmin])
+
   const links = isAdmin() ? adminLinks : studentLinks
 
   return (
@@ -172,7 +190,7 @@ function Sidebar({ isOpen }) {
                   {link.label}
                 </span>
 
-                {link.badge > 0 && (
+                {link.badge && pendingCount > 0 && (
                   <span
                     className={`bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center ${
                       isOpen
@@ -180,7 +198,7 @@ function Sidebar({ isOpen }) {
                         : 'absolute -top-1 -right-1 w-4 h-4 text-[10px]'
                     }`}
                   >
-                    {link.badge}
+                    {pendingCount}
                   </span>
                 )}
 

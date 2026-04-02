@@ -374,7 +374,7 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
     const requestId = parseInt(req.params.id)
     if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
 
-    const { conditionOnReturn } = req.body
+    const { conditionOnReturn, returnedAt } = req.body
 
     const existing = await prisma.request.findUnique({
       where: { id: requestId },
@@ -389,9 +389,10 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Restore quantity — only for RETURNABLE items
+      // Restore quantity — for RETURNABLE and NA items (not CONSUMABLE)
+      // NA means "not yet classified" — safer to restore than to lose the count
       for (const ri of existing.items) {
-        if (ri.item.type === 'RETURNABLE') {
+        if (ri.item.type !== 'CONSUMABLE') {
           await tx.item.update({
             where: { id: ri.itemId },
             data: { quantity: { increment: ri.quantity } },
@@ -403,7 +404,7 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
       await tx.transaction.update({
         where: { requestId },
         data: {
-          returnedAt: new Date(),
+          returnedAt: returnedAt ? new Date(returnedAt) : new Date(),
           conditionOnReturn: conditionOnReturn?.trim() || null,
         },
       })
