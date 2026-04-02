@@ -206,13 +206,38 @@ function IssueModal({ request, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  // Per-item issued quantities — default to min(requested, available stock)
+  const [issuedQtys, setIssuedQtys] = useState(() => {
+    const init = {}
+    request.items.forEach((ri) => {
+      init[ri.item.id] = Math.min(ri.quantity, ri.item.quantity)
+    })
+    return init
+  })
+
+  const setQty = (itemId, val) => {
+    setIssuedQtys((prev) => ({ ...prev, [itemId]: val }))
+  }
+
   const handleSubmit = async () => {
+    // Validate no qty is out of range
+    for (const ri of request.items) {
+      const qty = issuedQtys[ri.item.id] ?? 0
+      if (qty < 0 || qty > ri.quantity || qty > ri.item.quantity) {
+        setError(`Invalid quantity for "${ri.item.name}"`)
+        return
+      }
+    }
     setSubmitting(true)
     setError('')
     try {
       await api.patch(`/api/requests/${request.id}/issue`, {
         expectedReturnAt: new Date(expectedReturnAt).toISOString(),
         conditionOnIssue: conditionOnIssue.trim() || null,
+        issuedItems: request.items.map((ri) => ({
+          itemId: ri.item.id,
+          quantity: issuedQtys[ri.item.id] ?? 0,
+        })),
       })
       onSuccess()
     } catch (err) {
@@ -225,19 +250,68 @@ function IssueModal({ request, onClose, onSuccess }) {
   return (
     <ModalShell title="Issue Items" onClose={onClose}>
       <div className="space-y-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-          <p className="text-xs font-semibold text-blue-700 font-body mb-2">Issuing to {request.user.name}</p>
-          <div className="space-y-1">
-            {request.items.map((ri) => (
-              <div key={ri.item.id} className="flex items-center justify-between">
-                <p className="text-sm font-body text-slate-800">{ri.item.name} ×{ri.quantity}</p>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${
-                  ri.item.type === 'CONSUMABLE' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+        {/* Per-item qty editor */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider font-body mb-2">
+            Issuing to {request.user.name} — set actual quantities
+          </p>
+          <div className="space-y-2">
+            {request.items.map((ri) => {
+              const qty = issuedQtys[ri.item.id] ?? 0
+              const available = ri.item.quantity
+              const notAvailable = available === 0
+              const partial = qty < ri.quantity
+
+              return (
+                <div key={ri.item.id} className={`rounded-xl border p-3 ${
+                  qty === 0 ? 'border-red-200 bg-red-50' : partial ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'
                 }`}>
-                  {ri.item.type === 'CONSUMABLE' ? 'Consumable' : 'Return required'}
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 font-body">{ri.item.name}</p>
+                      <p className="text-xs font-body mt-0.5">
+                        <span className="text-slate-500">Requested: {ri.quantity}</span>
+                        <span className="mx-1.5 text-slate-300">·</span>
+                        <span className={available === 0 ? 'text-red-600 font-medium' : 'text-emerald-600'}>
+                          {available} in stock
+                        </span>
+                      </p>
+                    </div>
+                    {/* Qty stepper */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => setQty(ri.item.id, Math.max(0, qty - 1))}
+                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer"
+                      >−</button>
+                      <input
+                        type="number"
+                        min={0}
+                        max={Math.min(ri.quantity, available)}
+                        value={qty}
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(Math.min(ri.quantity, available), parseInt(e.target.value) || 0))
+                          setQty(ri.item.id, v)
+                        }}
+                        className="w-10 text-center text-sm font-semibold font-body border border-slate-200 rounded-lg py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      />
+                      <button
+                        onClick={() => setQty(ri.item.id, Math.min(Math.min(ri.quantity, available), qty + 1))}
+                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer"
+                      >+</button>
+                    </div>
+                  </div>
+                  {qty === 0 && (
+                    <p className="text-xs text-red-600 font-body mt-1.5 font-medium">Not issuing — explain to student below</p>
+                  )}
+                  {partial && qty > 0 && (
+                    <p className="text-xs text-amber-700 font-body mt-1.5">Partial issue: {qty} of {ri.quantity} requested</p>
+                  )}
+                  {notAvailable && qty === 0 && (
+                    <p className="text-xs text-red-500 font-body mt-0.5">Out of stock</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -256,13 +330,13 @@ function IssueModal({ request, onClose, onSuccess }) {
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">
-            Item Condition (optional)
+            Notes / Condition (optional)
           </label>
           <input
             type="text"
             value={conditionOnIssue}
             onChange={(e) => setConditionOnIssue(e.target.value)}
-            placeholder="e.g. Good condition, all accessories included"
+            placeholder="e.g. Breadboard unavailable, will be given when restocked"
             className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 font-body focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -293,6 +367,19 @@ function ReturnModal({ request, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  // Per-item returned quantities — default to full issued qty
+  const [returnedQtys, setReturnedQtys] = useState(() => {
+    const init = {}
+    request.items.forEach((ri) => {
+      init[ri.item.id] = ri.quantity
+    })
+    return init
+  })
+
+  const setQty = (itemId, val) => {
+    setReturnedQtys((prev) => ({ ...prev, [itemId]: val }))
+  }
+
   const handleSubmit = async () => {
     setSubmitting(true)
     setError('')
@@ -300,6 +387,10 @@ function ReturnModal({ request, onClose, onSuccess }) {
       await api.patch(`/api/requests/${request.id}/return`, {
         conditionOnReturn: conditionOnReturn.trim() || null,
         returnedAt: new Date(returnedAt).toISOString(),
+        returnedItems: request.items.map((ri) => ({
+          itemId: ri.item.id,
+          quantity: returnedQtys[ri.item.id] ?? 0,
+        })),
       })
       onSuccess()
     } catch (err) {
@@ -309,37 +400,64 @@ function ReturnModal({ request, onClose, onSuccess }) {
     }
   }
 
-  // Items that will get their stock restored (everything except CONSUMABLE)
-  const restoredItems = request.items.filter((ri) => ri.item.type !== 'CONSUMABLE')
-
   return (
     <ModalShell title="Mark as Returned" onClose={onClose}>
       <div className="space-y-4">
-        <div className="bg-slate-50 rounded-xl p-3">
-          <p className="text-xs text-slate-500 font-body mb-2">Returning from {request.user.name}</p>
-          <div className="space-y-1">
-            {request.items.map((ri) => (
-              <div key={ri.item.id} className="flex items-center justify-between">
-                <p className="text-sm font-body text-slate-800">
-                  {ri.item.name} <span className="text-slate-500">×{ri.quantity}</span>
-                </p>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${
-                  ri.item.type === 'CONSUMABLE' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+        {/* Per-item qty editor */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider font-body mb-2">
+            Returning from {request.user.name} — set actual quantities returned
+          </p>
+          <div className="space-y-2">
+            {request.items.map((ri) => {
+              const qty = returnedQtys[ri.item.id] ?? 0
+              const notReturned = qty === 0
+
+              return (
+                <div key={ri.item.id} className={`rounded-xl border p-3 ${
+                  notReturned ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'
                 }`}>
-                  {ri.item.type === 'CONSUMABLE' ? 'Kept' : 'Returning'}
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 font-body">{ri.item.name}</p>
+                      <p className="text-xs font-body mt-0.5 text-slate-500">
+                        Issued: {ri.quantity}
+                      </p>
+                    </div>
+                    {/* Qty stepper */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => setQty(ri.item.id, Math.max(0, qty - 1))}
+                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer"
+                      >−</button>
+                      <input
+                        type="number"
+                        min={0}
+                        max={ri.quantity}
+                        value={qty}
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(ri.quantity, parseInt(e.target.value) || 0))
+                          setQty(ri.item.id, v)
+                        }}
+                        className="w-10 text-center text-sm font-semibold font-body border border-slate-200 rounded-lg py-1 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      />
+                      <button
+                        onClick={() => setQty(ri.item.id, Math.min(ri.quantity, qty + 1))}
+                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-body cursor-pointer"
+                      >+</button>
+                    </div>
+                  </div>
+                  {notReturned && (
+                    <p className="text-xs text-amber-700 font-body mt-1.5 font-medium">Not returned — stock will not be restored</p>
+                  )}
+                  {!notReturned && qty < ri.quantity && (
+                    <p className="text-xs text-emerald-700 font-body mt-1.5">Partial return: {qty} of {ri.quantity}</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
-
-        {restoredItems.length > 0 && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            <p className="text-xs text-emerald-700 font-body font-medium">
-              Stock will be restored for {restoredItems.length} item{restoredItems.length > 1 ? 's' : ''}
-            </p>
-          </div>
-        )}
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 font-body mb-1.5 uppercase tracking-wider">

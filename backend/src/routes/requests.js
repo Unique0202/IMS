@@ -282,25 +282,26 @@ router.patch('/:id/decline', authenticate, authorizeAdmin, async (req, res, next
  *
  * Marks an APPROVED request as ISSUED — admin physically hands items to student.
  *
- * WHAT HAPPENS IN THE TRANSACTION:
- *   1. Each requested item's quantity is REDUCED by the requested amount
- *   2. A Transaction record is created (tracks who got what, when, expected return)
- *   3. Request status is set to ISSUED
+ * PARTIAL ISSUE SUPPORT:
+ *   The frontend sends issuedItems: [{ itemId, quantity }] with the actual
+ *   quantities the admin is handing over. This can be less than requested
+ *   (e.g. breadboard out of stock → admin sets quantity 0 for it).
  *
- * WHY REDUCE QUANTITY HERE AND NOT AT APPROVAL?
- *   Approval just means "we'll give it to you". Issuance means "we gave it to you".
- *   Reducing at approval would block the item even if the student never shows up.
+ *   Rules:
+ *     - issuedQty must be >= 0 (can issue 0 = item not available)
+ *     - issuedQty must be <= available stock (can't issue more than you have)
+ *     - issuedQty must be <= requested qty (can't give more than asked)
+ *   No error is thrown just because an item has 0 quantity — admin decides.
  *
- * STOCK CHECK:
- *   We re-validate that the current quantity is still sufficient at the moment of
- *   issuance — another admin could have issued the same item in the meantime.
+ *   Items with issuedQty = 0 are still part of the request record (for history)
+ *   but their stock is not touched.
  */
 router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) => {
   try {
     const requestId = parseInt(req.params.id)
     if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
 
-    const { expectedReturnAt, conditionOnIssue } = req.body
+    const { expectedReturnAt, conditionOnIssue, issuedItems } = req.body
 
     const existing = await prisma.request.findUnique({
       where: { id: requestId },
@@ -314,20 +315,40 @@ router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) 
       throw createError(400, `Cannot issue a request with status ${existing.status}`, 'INVALID_STATUS')
     }
 
-    // Re-validate stock for all RETURNABLE items
+    // Build a map of itemId → actualIssuedQty from the frontend submission.
+    // Falls back to the requested quantity if admin didn't send issuedItems
+    // (backward-compatible with old frontend calls).
+    const issuedMap = {}
+    if (Array.isArray(issuedItems)) {
+      for (const { itemId, quantity } of issuedItems) {
+        issuedMap[itemId] = quantity
+      }
+    }
+
+    // Validate each item's issued quantity
     for (const ri of existing.items) {
-      if (ri.item.type === 'RETURNABLE' && ri.item.quantity < ri.quantity) {
-        throw createError(400, `Insufficient stock for "${ri.item.name}": ${ri.item.quantity} available, ${ri.quantity} needed`, 'INSUFFICIENT_STOCK')
+      const issuedQty = issuedMap[ri.itemId] ?? ri.quantity
+      if (issuedQty < 0) {
+        throw createError(400, `Issued quantity cannot be negative for "${ri.item.name}"`, 'INVALID_QTY')
+      }
+      if (issuedQty > ri.quantity) {
+        throw createError(400, `Cannot issue more than requested for "${ri.item.name}" (requested: ${ri.quantity})`, 'EXCEEDS_REQUEST')
+      }
+      if (issuedQty > ri.item.quantity) {
+        throw createError(400, `Not enough stock for "${ri.item.name}": ${ri.item.quantity} available, ${issuedQty} to issue`, 'INSUFFICIENT_STOCK')
       }
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Reduce quantity for each item
+      // Decrement each item by the ACTUAL issued quantity (not the requested qty)
       for (const ri of existing.items) {
-        await tx.item.update({
-          where: { id: ri.itemId },
-          data: { quantity: { decrement: ri.quantity } },
-        })
+        const issuedQty = issuedMap[ri.itemId] ?? ri.quantity
+        if (issuedQty > 0) {
+          await tx.item.update({
+            where: { id: ri.itemId },
+            data: { quantity: { decrement: issuedQty } },
+          })
+        }
       }
 
       // Create transaction record
@@ -374,7 +395,7 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
     const requestId = parseInt(req.params.id)
     if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
 
-    const { conditionOnReturn, returnedAt } = req.body
+    const { conditionOnReturn, returnedAt, returnedItems } = req.body
 
     const existing = await prisma.request.findUnique({
       where: { id: requestId },
@@ -388,14 +409,37 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
       throw createError(400, `Cannot return a request with status ${existing.status}`, 'INVALID_STATUS')
     }
 
+    // Build a map of itemId → actualReturnedQty from the frontend submission.
+    // Falls back to the full requested quantity if admin didn't send returnedItems.
+    const returnedMap = {}
+    if (Array.isArray(returnedItems)) {
+      for (const { itemId, quantity } of returnedItems) {
+        returnedMap[itemId] = quantity
+      }
+    }
+
+    // Validate: returned qty must be 0 ≤ qty ≤ requested qty
+    for (const ri of existing.items) {
+      const returnedQty = returnedMap[ri.itemId] ?? ri.quantity
+      if (returnedQty < 0) {
+        throw createError(400, `Returned quantity cannot be negative for "${ri.item.name}"`, 'INVALID_QTY')
+      }
+      if (returnedQty > ri.quantity) {
+        throw createError(400, `Cannot return more than was requested for "${ri.item.name}"`, 'EXCEEDS_REQUEST')
+      }
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
-      // Restore quantity for ALL items — the admin physically received them back.
-      // The admin is the authority on what was returned; we don't skip by type.
+      // Restore quantity by the ACTUAL returned amount per item.
+      // Items with returnedQty = 0 are not touched (kept by student / lost).
       for (const ri of existing.items) {
-        await tx.item.update({
-          where: { id: ri.itemId },
-          data: { quantity: { increment: ri.quantity } },
-        })
+        const returnedQty = returnedMap[ri.itemId] ?? ri.quantity
+        if (returnedQty > 0) {
+          await tx.item.update({
+            where: { id: ri.itemId },
+            data: { quantity: { increment: returnedQty } },
+          })
+        }
       }
 
       // Update transaction record
