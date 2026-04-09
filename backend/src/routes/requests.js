@@ -234,6 +234,18 @@ router.patch('/:id/approve', authenticate, authorizeAdmin, async (req, res, next
       },
     })
 
+    const deadline = collectionDeadline.toLocaleString('en-IN', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    })
+    await prisma.notification.create({
+      data: {
+        userId: existing.userId,
+        type: 'APPROVED',
+        requestId,
+        message: `Your request #${requestId} has been approved. Please collect your items by ${deadline}.`,
+      },
+    })
+
     res.json({ success: true, data: { request: updated } })
   } catch (error) {
     next(error)
@@ -268,6 +280,15 @@ router.patch('/:id/decline', authenticate, authorizeAdmin, async (req, res, next
       include: {
         user: { select: { id: true, name: true, email: true } },
         items: { include: { item: { select: { id: true, name: true, type: true } } } },
+      },
+    })
+
+    await prisma.notification.create({
+      data: {
+        userId: existing.userId,
+        type: 'DECLINED',
+        requestId,
+        message: `Your request #${requestId} was declined. Reason: ${declineReason.trim()}`,
       },
     })
 
@@ -367,7 +388,7 @@ router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) 
       })
 
       // Update request status
-      return tx.request.update({
+      const issued = await tx.request.update({
         where: { id: requestId },
         data: { status: 'ISSUED' },
         include: {
@@ -376,6 +397,20 @@ router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) 
           transaction: true,
         },
       })
+
+      const returnByMsg = expectedReturnAt
+        ? ` Return by ${new Date(expectedReturnAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.`
+        : ''
+      await tx.notification.create({
+        data: {
+          userId: existing.userId,
+          type: 'ISSUED',
+          requestId,
+          message: `Items from request #${requestId} have been issued to you.${returnByMsg}`,
+        },
+      })
+
+      return issued
     })
 
     res.json({ success: true, data: { request: updated } })
@@ -459,7 +494,7 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
       })
 
       // Update request status
-      return tx.request.update({
+      const returned = await tx.request.update({
         where: { id: requestId },
         data: { status: 'RETURNED' },
         include: {
@@ -468,6 +503,17 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
           transaction: true,
         },
       })
+
+      await tx.notification.create({
+        data: {
+          userId: returned.userId,
+          type: 'RETURNED',
+          requestId,
+          message: `Request #${requestId} has been marked as returned. Thank you!`,
+        },
+      })
+
+      return returned
     })
 
     res.json({ success: true, data: { request: updated } })

@@ -171,4 +171,34 @@ router.post('/logout', (req, res) => {
   res.json({ success: true, data: { message: 'Logged out' } })
 })
 
+/**
+ * PATCH /api/auth/change-password
+ * Lets a logged-in user change their own password.
+ * Requires currentPassword + newPassword in the body.
+ */
+router.patch('/change-password', authenticate, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+      throw createError(400, 'Both current and new password are required', 'MISSING_FIELDS')
+    }
+    if (newPassword.length < 6) {
+      throw createError(400, 'New password must be at least 6 characters', 'WEAK_PASSWORD')
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+    const valid = await bcrypt.compare(currentPassword, user.password)
+    if (!valid) {
+      throw createError(400, 'Current password is incorrect', 'WRONG_PASSWORD')
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } })
+
+    res.json({ success: true, data: { message: 'Password changed successfully' } })
+  } catch (error) {
+    next(error)
+  }
+})
+
 module.exports = router

@@ -13,6 +13,8 @@ import AdminRequests from './pages/admin/Requests'
 import AdminInventory from './pages/admin/Inventory'
 import AddItem from './pages/admin/AddItem'
 import IssuedItems from './pages/admin/IssuedItems'
+import AdminUsers from './pages/admin/Users'
+import StudentProfile from './pages/student/Profile'
 import Placeholder from './pages/Placeholder'
 
 /**
@@ -72,7 +74,7 @@ function App() {
         <Route path="inventory/:categoryId" element={<CategoryItems />} />
         <Route path="cart" element={<Placeholder title="My Cart" message="Open the cart from the navbar icon" />} />
         <Route path="requests" element={<MyRequests />} />
-        <Route path="profile" element={<Placeholder title="My Profile" message="Coming in Phase 9" />} />
+        <Route path="profile" element={<StudentProfile />} />
       </Route>
 
       {/* Admin routes — protected + wrapped in Layout */}
@@ -90,6 +92,7 @@ function App() {
         <Route path="requests" element={<AdminRequests />} />
         <Route path="issued" element={<IssuedItems />} />
         <Route path="add-item" element={<AddItem />} />
+        <Route path="users" element={<AdminUsers />} />
       </Route>
 
       {/* 404 */}
