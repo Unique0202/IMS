@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import api from '../utils/api'
 
 /**
@@ -45,7 +46,7 @@ const studentLinks = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
       </svg>
     ),
-    badge: 0, // Wired to CartContext in Phase 6
+    badge: 'cart',
   },
   {
     to: '/student/requests',
@@ -127,6 +128,7 @@ const adminLinks = [
 
 function Sidebar({ isOpen }) {
   const { isAdmin } = useAuth()
+  const { cartTotal } = useCart()
   const location = useLocation()
   const [pendingCount, setPendingCount] = useState(0)
 
@@ -199,17 +201,25 @@ function Sidebar({ isOpen }) {
                   {link.label}
                 </span>
 
-                {link.badge && pendingCount > 0 && (
-                  <span
-                    className={`bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center ${
-                      isOpen
-                        ? 'ml-auto px-2 py-0.5 min-w-[20px]'
-                        : 'absolute -top-1 -right-1 w-4 h-4 text-[10px]'
-                    }`}
-                  >
-                    {pendingCount}
-                  </span>
-                )}
+                {(() => {
+                  // Admin requests badge — pending count
+                  if (link.badge === true && pendingCount > 0) {
+                    return (
+                      <span className={`bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center ${isOpen ? 'ml-auto px-2 py-0.5 min-w-[20px]' : 'absolute -top-1 -right-1 w-4 h-4 text-[10px]'}`}>
+                        {pendingCount}
+                      </span>
+                    )
+                  }
+                  // Student cart badge — live cart total
+                  if (link.badge === 'cart' && cartTotal > 0) {
+                    return (
+                      <span className={`bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center ${isOpen ? 'ml-auto px-2 py-0.5 min-w-[20px]' : 'absolute -top-1 -right-1 w-4 h-4 text-[10px]'}`}>
+                        {cartTotal > 99 ? '99+' : cartTotal}
+                      </span>
+                    )
+                  }
+                  return null
+                })()}
 
                 {!isOpen && (
                   <span className="absolute left-full ml-3 px-2 py-1 bg-slate-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 /**
  * CartContext — manages the student's cart across all pages.
@@ -25,9 +25,26 @@ import { createContext, useContext, useState, useCallback } from 'react'
  */
 const CartContext = createContext(null)
 
+const CART_KEY = 'cipd_cart'
+
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState([])
+  // Load cart from localStorage on first render
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_KEY)
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
   const [cartOpen, setCartOpen] = useState(false)
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart))
+    } catch { /* storage full or unavailable */ }
+  }, [cart])
 
   /**
    * addToCart — adds an item to the cart or updates its quantity if already present.
