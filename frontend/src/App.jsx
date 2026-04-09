@@ -8,6 +8,7 @@ import StudentDashboard from './pages/student/Dashboard'
 import StudentInventory from './pages/student/Inventory'
 import CategoryItems from './pages/student/CategoryItems'
 import MyRequests from './pages/student/MyRequests'
+import Cart from './pages/student/Cart'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminRequests from './pages/admin/Requests'
 import AdminInventory from './pages/admin/Inventory'
@@ -72,7 +73,7 @@ function App() {
         <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="inventory" element={<StudentInventory />} />
         <Route path="inventory/:categoryId" element={<CategoryItems />} />
-        <Route path="cart" element={<Placeholder title="My Cart" message="Open the cart from the navbar icon" />} />
+        <Route path="cart" element={<Cart />} />
         <Route path="requests" element={<MyRequests />} />
         <Route path="profile" element={<StudentProfile />} />
       </Route>
