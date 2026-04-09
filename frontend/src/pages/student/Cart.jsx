@@ -201,7 +201,7 @@ export default function Cart() {
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => navigate('/student/inventory')}
             className="flex-1 py-3 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-body cursor-pointer transition-colors"

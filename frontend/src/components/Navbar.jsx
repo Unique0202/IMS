@@ -198,14 +198,14 @@ function Navbar({ sidebarOpen, onToggleSidebar }) {
           )}
         </div>
 
-        <div className="h-6 w-px bg-white/20" />
+        <div className="h-6 w-px bg-white/20 hidden sm:block" />
 
-        {/* User info */}
+        {/* User info — avatar always, name only on sm+ */}
         <div className="hidden sm:flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-semibold">
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
             {user?.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
-          <div className="text-right">
+          <div className="text-right hidden md:block">
             <p className="text-white text-sm font-medium leading-tight">{user?.name || 'User'}</p>
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
               isAdmin() ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'

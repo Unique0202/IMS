@@ -256,7 +256,7 @@ export default function IssuedItems() {
                 key={req.id}
                 className={`bg-white rounded-2xl border p-5 transition-colors ${isOverdue ? 'border-red-200 bg-red-50/30' : 'border-slate-200'}`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   {/* Left — student + items */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -298,7 +298,7 @@ export default function IssuedItems() {
                   {/* Right — action */}
                   <button
                     onClick={() => setReturning(req)}
-                    className={`flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-xl cursor-pointer transition-colors font-body ${
+                    className={`sm:flex-shrink-0 w-full sm:w-auto px-4 py-2 text-sm font-semibold rounded-xl cursor-pointer transition-colors font-body ${
                       isOverdue
                         ? 'bg-red-600 text-white hover:bg-red-700'
                         : 'bg-emerald-600 text-white hover:bg-emerald-700'

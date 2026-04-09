@@ -598,14 +598,14 @@ function AdminRequests() {
       )}
 
       {/* Status tabs */}
-      <div className="flex gap-1 flex-wrap mb-6 bg-white border border-slate-200 rounded-2xl p-1.5">
+      <div className="flex gap-1 overflow-x-auto scrollbar-none mb-6 bg-white border border-slate-200 rounded-2xl p-1.5">
         {STATUS_TABS.map((tab) => {
           const count = tab === 'ALL' ? requests.length : (countByStatus[tab] || 0)
           return (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all font-body cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all font-body cursor-pointer whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
@@ -646,15 +646,15 @@ function AdminRequests() {
             <div key={request.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
               {/* Card header */}
               <div className="flex items-center justify-between px-5 py-3 bg-slate-50/70 border-b border-slate-100">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Student avatar */}
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold font-body flex-shrink-0"
                     style={{ backgroundColor: 'var(--color-primary)' }}>
                     {request.user.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 font-body leading-tight">{request.user.name}</p>
-                    <p className="text-xs text-slate-500 font-body">{request.user.email}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 font-body leading-tight truncate">{request.user.name}</p>
+                    <p className="text-xs text-slate-500 font-body truncate">{request.user.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

@@ -140,8 +140,8 @@ function CategoryItems() {
       </div>
 
       {/* Filters bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-6 bg-white border border-slate-200 rounded-2xl p-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6 bg-white border border-slate-200 rounded-2xl p-4">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-slate-500 font-body uppercase tracking-wider">Type:</span>
           {['ALL', 'RETURNABLE', 'CONSUMABLE'].map((type) => (
             <button
@@ -156,6 +156,7 @@ function CategoryItems() {
           ))}
         </div>
 
+        <div className="h-px w-full bg-slate-100 sm:hidden" />
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
         <div className="flex items-center gap-2">
@@ -201,7 +202,7 @@ function CategoryItems() {
         </div>
       ) : (
         /* Product card grid — 2 cols on mobile, 3 on md, 4 on xl */
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((item) => {
             const inCart = isInCart(item.id)
             const pickerOpen = pickerOpenId === item.id

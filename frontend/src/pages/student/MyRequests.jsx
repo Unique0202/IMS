@@ -156,15 +156,16 @@ function MyRequests() {
         </div>
       )}
 
-      {/* Status tabs */}
-      <div className="flex gap-1 flex-wrap mb-6 bg-white border border-slate-200 rounded-2xl p-1.5">
+      {/* Status tabs — scrollable on mobile */}
+      <div className="flex gap-1 mb-6 bg-white border border-slate-200 rounded-2xl p-1.5 overflow-x-auto scrollbar-none">
+
         {STATUS_TABS.map((tab) => {
           const count = tab === 'ALL' ? requests.length : (countByStatus[tab] || 0)
           return (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all font-body cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all font-body cursor-pointer whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'

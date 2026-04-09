@@ -282,12 +282,12 @@ function StudentDashboard() {
                     const overdue = daysLeft !== null && daysLeft < 0
 
                     return (
-                      <div key={req.id} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <div key={req.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-900 font-body truncate">{itemSummary}</p>
                           <p className="mt-0.5 text-xs text-slate-500 font-body">CIPD Electronics Lab</p>
                         </div>
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shrink-0 border ${
+                        <span className={`inline-flex items-center self-start sm:self-auto rounded-full px-3 py-1 text-xs font-semibold shrink-0 border ${
                           overdue
                             ? 'bg-red-50 text-red-700 border-red-200'
                             : 'bg-emerald-50 text-emerald-700 border-emerald-200'
