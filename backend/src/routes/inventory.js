@@ -20,7 +20,8 @@
 
 const express = require('express')
 const { PrismaClient } = require('@prisma/client')
-const { authenticate } = require('../middleware/auth')
+const { authenticate, authorizeAdmin } = require('../middleware/auth')
+const { createError } = require('../middleware/errorHandler')
 
 const router = express.Router()
 const prisma = new PrismaClient()
@@ -250,6 +251,173 @@ router.get('/low-stock', authenticate, async (req, res, next) => {
       take: 10,
     })
     res.json({ success: true, data: { items } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * GET /api/inventory/admin/items  (admin only)
+ * Returns ALL items (including inactive & soft-deleted) with full fields.
+ * Supports ?categoryId=, ?status=, ?deleted=true, ?q= filters.
+ */
+router.get('/admin/items', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const { categoryId, status, deleted, q } = req.query
+    const where = {}
+    if (categoryId) where.categoryId = parseInt(categoryId)
+    if (status && ['ACTIVE', 'INACTIVE'].includes(status)) where.status = status
+    if (deleted === 'true') {
+      where.deletedAt = { not: null }
+    } else if (deleted === 'false') {
+      where.deletedAt = null
+    }
+    if (q && q.trim().length >= 1) {
+      where.name = { contains: q.trim(), mode: 'insensitive' }
+    }
+
+    const items = await prisma.item.findMany({
+      where,
+      include: { category: { select: { id: true, name: true } } },
+      orderBy: [{ deletedAt: 'asc' }, { name: 'asc' }],
+    })
+    res.json({ success: true, data: { items } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * POST /api/inventory/items  (admin only)
+ * Creates a new item. Required: name, categoryId, quantity.
+ */
+router.post('/items', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const {
+      name, categoryId, quantity, type, purpose, status,
+      location, imageUrl, rfid, vendorDetails, costOfPurchase,
+      billNo, purchaseDate, receivingDate,
+    } = req.body
+
+    if (!name || !name.trim()) throw createError(400, 'Item name is required', 'MISSING_NAME')
+    if (!categoryId) throw createError(400, 'Category is required', 'MISSING_CATEGORY')
+    if (quantity == null || isNaN(parseInt(quantity))) throw createError(400, 'Quantity is required', 'MISSING_QTY')
+
+    const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId) } })
+    if (!category) throw createError(404, 'Category not found', 'CAT_NOT_FOUND')
+
+    const item = await prisma.item.create({
+      data: {
+        name: name.trim(),
+        categoryId: parseInt(categoryId),
+        quantity: parseInt(quantity),
+        type: type || 'NA',
+        purpose: purpose || 'ISSUE',
+        status: status || 'ACTIVE',
+        location: location?.trim() || null,
+        imageUrl: imageUrl?.trim() || null,
+        rfid: rfid?.trim() || null,
+        vendorDetails: vendorDetails?.trim() || null,
+        costOfPurchase: costOfPurchase ? parseFloat(costOfPurchase) : null,
+        billNo: billNo?.trim() || null,
+        purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
+        receivingDate: receivingDate ? new Date(receivingDate) : null,
+      },
+      include: { category: { select: { id: true, name: true } } },
+    })
+    res.status(201).json({ success: true, data: { item } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/inventory/items/:id  (admin only)
+ * Updates any field on an item.
+ */
+router.patch('/items/:id', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const itemId = parseInt(req.params.id)
+    if (isNaN(itemId)) throw createError(400, 'Invalid item ID', 'INVALID_ID')
+
+    const existing = await prisma.item.findUnique({ where: { id: itemId } })
+    if (!existing) throw createError(404, 'Item not found', 'NOT_FOUND')
+
+    const {
+      name, categoryId, quantity, type, purpose, status,
+      location, imageUrl, rfid, vendorDetails, costOfPurchase,
+      billNo, purchaseDate, receivingDate,
+    } = req.body
+
+    const data = {}
+    if (name !== undefined) data.name = name.trim()
+    if (categoryId !== undefined) data.categoryId = parseInt(categoryId)
+    if (quantity !== undefined) data.quantity = parseInt(quantity)
+    if (type !== undefined) data.type = type
+    if (purpose !== undefined) data.purpose = purpose
+    if (status !== undefined) data.status = status
+    if (location !== undefined) data.location = location?.trim() || null
+    if (imageUrl !== undefined) data.imageUrl = imageUrl?.trim() || null
+    if (rfid !== undefined) data.rfid = rfid?.trim() || null
+    if (vendorDetails !== undefined) data.vendorDetails = vendorDetails?.trim() || null
+    if (costOfPurchase !== undefined) data.costOfPurchase = costOfPurchase ? parseFloat(costOfPurchase) : null
+    if (billNo !== undefined) data.billNo = billNo?.trim() || null
+    if (purchaseDate !== undefined) data.purchaseDate = purchaseDate ? new Date(purchaseDate) : null
+    if (receivingDate !== undefined) data.receivingDate = receivingDate ? new Date(receivingDate) : null
+
+    const item = await prisma.item.update({
+      where: { id: itemId },
+      data,
+      include: { category: { select: { id: true, name: true } } },
+    })
+    res.json({ success: true, data: { item } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * DELETE /api/inventory/items/:id  (admin only)
+ * Soft-deletes an item (sets deletedAt). Does not remove from DB.
+ */
+router.delete('/items/:id', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const itemId = parseInt(req.params.id)
+    if (isNaN(itemId)) throw createError(400, 'Invalid item ID', 'INVALID_ID')
+
+    const existing = await prisma.item.findUnique({ where: { id: itemId } })
+    if (!existing) throw createError(404, 'Item not found', 'NOT_FOUND')
+    if (existing.deletedAt) throw createError(400, 'Item is already deleted', 'ALREADY_DELETED')
+
+    await prisma.item.update({
+      where: { id: itemId },
+      data: { deletedAt: new Date() },
+    })
+    res.json({ success: true, data: { message: 'Item soft-deleted' } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/inventory/items/:id/restore  (admin only)
+ * Restores a soft-deleted item (clears deletedAt).
+ */
+router.patch('/items/:id/restore', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const itemId = parseInt(req.params.id)
+    if (isNaN(itemId)) throw createError(400, 'Invalid item ID', 'INVALID_ID')
+
+    const existing = await prisma.item.findUnique({ where: { id: itemId } })
+    if (!existing) throw createError(404, 'Item not found', 'NOT_FOUND')
+    if (!existing.deletedAt) throw createError(400, 'Item is not deleted', 'NOT_DELETED')
+
+    const item = await prisma.item.update({
+      where: { id: itemId },
+      data: { deletedAt: null },
+      include: { category: { select: { id: true, name: true } } },
+    })
+    res.json({ success: true, data: { item } })
   } catch (error) {
     next(error)
   }

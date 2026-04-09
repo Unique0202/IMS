@@ -10,6 +10,9 @@ import CategoryItems from './pages/student/CategoryItems'
 import MyRequests from './pages/student/MyRequests'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminRequests from './pages/admin/Requests'
+import AdminInventory from './pages/admin/Inventory'
+import AddItem from './pages/admin/AddItem'
+import IssuedItems from './pages/admin/IssuedItems'
 import Placeholder from './pages/Placeholder'
 
 /**
@@ -83,10 +86,10 @@ function App() {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="inventory" element={<Placeholder title="Inventory" message="Coming in Phase 8" />} />
+        <Route path="inventory" element={<AdminInventory />} />
         <Route path="requests" element={<AdminRequests />} />
-        <Route path="issued" element={<Placeholder title="Issued Items" message="Coming in Phase 8" />} />
-        <Route path="add-item" element={<Placeholder title="Add Item" message="Coming in Phase 8" />} />
+        <Route path="issued" element={<IssuedItems />} />
+        <Route path="add-item" element={<AddItem />} />
       </Route>
 
       {/* 404 */}
