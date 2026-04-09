@@ -185,63 +185,79 @@ export default function AdminUsers() {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400 font-body">No students found.</div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Student</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Joined</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Total Requests</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Currently Issued</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Pending</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-sm font-heading flex-shrink-0">
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900 font-body">{u.name}</p>
-                        <p className="text-xs text-slate-400 font-body">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500 font-body text-xs">{formatDate(u.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <span className="font-semibold text-slate-800 font-body">{u.totalRequests}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.issued > 0 ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-body font-medium">{u.issued} issued</span>
-                    ) : (
-                      <span className="text-slate-300 font-body">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.pending > 0 ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-body font-medium">{u.pending} pending</span>
-                    ) : (
-                      <span className="text-slate-300 font-body">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setSelected(u.id)}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium"
-                    >
-                      View History
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Student</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Joined</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Requests</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Issued</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Pending</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-sm font-heading flex-shrink-0">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900 font-body">{u.name}</p>
+                            <p className="text-xs text-slate-400 font-body">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 font-body text-xs">{formatDate(u.createdAt)}</td>
+                      <td className="px-4 py-3"><span className="font-semibold text-slate-800 font-body">{u.totalRequests}</span></td>
+                      <td className="px-4 py-3">
+                        {u.issued > 0 ? <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-body font-medium">{u.issued} issued</span> : <span className="text-slate-300 font-body">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {u.pending > 0 ? <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-body font-medium">{u.pending} pending</span> : <span className="text-slate-300 font-body">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => setSelected(u.id)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium">View History</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((u) => (
+              <div key={u.id} className="bg-white rounded-2xl border border-slate-200 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold font-heading flex-shrink-0">
+                    {u.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900 font-body text-sm truncate">{u.name}</p>
+                    <p className="text-xs text-slate-400 font-body truncate">{u.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap mb-3">
+                  <span className="text-xs text-slate-500 font-body">{u.totalRequests} requests</span>
+                  {u.issued > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-body font-medium">{u.issued} issued</span>}
+                  {u.pending > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-body font-medium">{u.pending} pending</span>}
+                  <span className="text-xs text-slate-400 font-body">Joined {formatDate(u.createdAt)}</span>
+                </div>
+                <button onClick={() => setSelected(u.id)} className="w-full text-xs py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium">
+                  View History
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {selected && (

@@ -334,7 +334,7 @@ export default function AdminInventory() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-5 flex flex-wrap gap-3 items-center">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-5 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
         <input
           type="text"
           value={search}
@@ -376,91 +376,110 @@ export default function AdminInventory() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Item list */}
       {items.length === 0 ? (
         <div className="text-center py-16 text-slate-400 font-body">
           No items found. Try adjusting filters or{' '}
           <button onClick={() => navigate('/admin/add-item')} className="text-cyan-600 underline cursor-pointer">add a new item</button>.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Item</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Category</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Qty</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Type</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Location</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Added</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {items.map((item) => {
-                  const deleted = !!item.deletedAt
-                  const inactive = item.status === 'INACTIVE'
-                  return (
-                    <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${deleted ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-slate-900 font-body">{item.name}</span>
-                          {inactive && !deleted && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-body font-medium">Inactive</span>
-                          )}
-                          {deleted && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-body font-medium">Removed</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 font-body">{item.category.name}</td>
-                      <td className="px-4 py-3">
-                        <span className={`font-semibold font-body ${item.quantity === 0 ? 'text-red-600' : item.quantity <= 5 ? 'text-amber-600' : 'text-slate-800'}`}>
-                          {item.quantity}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${TYPE_BADGE[item.type]}`}>
-                          {item.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 font-body text-xs">{item.location || '—'}</td>
-                      <td className="px-4 py-3 text-slate-400 font-body text-xs">{formatDate(item.createdAt)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          {deleted ? (
-                            <button
-                              onClick={() => handleRestore(item)}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-body cursor-pointer transition-colors font-medium"
-                            >
-                              Restore
-                            </button>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => setEditItem(item)}
-                                className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => setDeleteItem(item)}
-                                className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-body cursor-pointer transition-colors font-medium"
-                              >
-                                Remove
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Item</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Category</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Qty</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Type</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Location</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider font-body">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {items.map((item) => {
+                    const deleted = !!item.deletedAt
+                    const inactive = item.status === 'INACTIVE'
+                    return (
+                      <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${deleted ? 'opacity-50' : ''}`}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-900 font-body">{item.name}</span>
+                            {inactive && !deleted && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-body font-medium">Inactive</span>}
+                            {deleted && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-body font-medium">Removed</span>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 font-body">{item.category.name}</td>
+                        <td className="px-4 py-3">
+                          <span className={`font-semibold font-body ${item.quantity === 0 ? 'text-red-600' : item.quantity <= 5 ? 'text-amber-600' : 'text-slate-800'}`}>{item.quantity}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${TYPE_BADGE[item.type]}`}>{item.type}</span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 font-body text-xs">{item.location || '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            {deleted ? (
+                              <button onClick={() => handleRestore(item)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-body cursor-pointer transition-colors font-medium">Restore</button>
+                            ) : (
+                              <>
+                                <button onClick={() => setEditItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium">Edit</button>
+                                <button onClick={() => setDeleteItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-body cursor-pointer transition-colors font-medium">Remove</button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-3">
+            {items.map((item) => {
+              const deleted = !!item.deletedAt
+              const inactive = item.status === 'INACTIVE'
+              return (
+                <div key={item.id} className={`bg-white rounded-2xl border border-slate-200 p-4 ${deleted ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 font-body text-sm">{item.name}</p>
+                      <p className="text-xs text-slate-500 font-body mt-0.5">{item.category.name}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {inactive && !deleted && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-body">Inactive</span>}
+                      {deleted && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-body">Removed</span>}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${TYPE_BADGE[item.type]}`}>{item.type}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-xs font-body text-slate-500">
+                      <span className={`font-bold ${item.quantity === 0 ? 'text-red-600' : item.quantity <= 5 ? 'text-amber-600' : 'text-slate-800'}`}>
+                        Qty: {item.quantity}
+                      </span>
+                      {item.location && <span>{item.location}</span>}
+                    </div>
+                    <div className="flex gap-2">
+                      {deleted ? (
+                        <button onClick={() => handleRestore(item)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-body cursor-pointer font-medium">Restore</button>
+                      ) : (
+                        <>
+                          <button onClick={() => setEditItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-body cursor-pointer font-medium">Edit</button>
+                          <button onClick={() => setDeleteItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-body cursor-pointer font-medium">Remove</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
 
       {editItem && (

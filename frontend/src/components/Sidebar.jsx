@@ -126,7 +126,7 @@ const adminLinks = [
   },
 ]
 
-function Sidebar({ isOpen }) {
+function Sidebar({ isOpen, onClose }) {
   const { isAdmin } = useAuth()
   const { cartTotal } = useCart()
   const location = useLocation()
@@ -149,9 +149,11 @@ function Sidebar({ isOpen }) {
 
   return (
     <aside
-      className={`fixed top-16 left-0 bottom-0 z-30 border-r border-slate-200 bg-white transition-all duration-300 ease-in-out ${
-        isOpen ? 'w-72' : 'w-[72px]'
-      }`}
+      className={`fixed top-16 left-0 bottom-0 z-30 border-r border-slate-200 bg-white transition-all duration-300 ease-in-out
+        ${isOpen
+          ? 'w-72 translate-x-0'
+          : '-translate-x-full lg:translate-x-0 lg:w-[72px] w-72'
+        }`}
     >
       <div className="flex h-full flex-col">
         <div className={`border-b border-slate-200 px-4 py-4 ${isOpen ? '' : 'px-3'}`}>
@@ -183,6 +185,7 @@ function Sidebar({ isOpen }) {
               <NavLink
                 key={link.to}
                 to={link.to}
+                onClick={() => { if (window.innerWidth < 1024) onClose?.() }}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium font-body transition-all duration-200 group relative ${
                     isActive

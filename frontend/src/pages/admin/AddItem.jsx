@@ -143,7 +143,7 @@ export default function AddItem() {
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Category" required>
               <Select value={form.categoryId} onChange={set('categoryId')}>
                 <option value="">Select category</option>
@@ -164,7 +164,7 @@ export default function AddItem() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Type">
               <Select value={form.type} onChange={set('type')}>
                 {ITEM_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -223,7 +223,7 @@ export default function AddItem() {
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Cost of Purchase (₹)">
               <Input
                 type="number"
@@ -244,7 +244,7 @@ export default function AddItem() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Purchase Date">
               <Input type="date" value={form.purchaseDate} onChange={set('purchaseDate')} />
             </Field>

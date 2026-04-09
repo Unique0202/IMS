@@ -106,7 +106,7 @@ export default function Profile() {
 
       {/* Stats */}
       {!loadingStats && (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard label="Total Requests" value={stats.total}    tone="slate"   />
           <StatCard label="Pending/Approved" value={stats.active}  tone="cyan"    />
           <StatCard label="Currently Issued" value={stats.issued}  tone="blue"    />
