@@ -28,12 +28,28 @@ router.get('/mine', authenticate, async (req, res, next) => {
     const notifications = await prisma.notification.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: 'desc' },
-      take: 30,
+      take: 15,
     })
 
     const unreadCount = notifications.filter((n) => !n.read).length
 
     res.json({ success: true, data: { notifications, unreadCount } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * DELETE /api/notifications/clear-read
+ * Deletes all read notifications for the current user, keeping only unread ones.
+ * Must be before /:id routes so "clear-read" isn't treated as an :id.
+ */
+router.delete('/clear-read', authenticate, async (req, res, next) => {
+  try {
+    await prisma.notification.deleteMany({
+      where: { userId: req.user.id, read: true },
+    })
+    res.json({ success: true, data: { message: 'Read notifications cleared' } })
   } catch (error) {
     next(error)
   }

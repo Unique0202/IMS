@@ -164,9 +164,11 @@ model Notification {
 }
 
 enum NotificationType {
+  PENDING
   APPROVED
   DECLINED
   ISSUED
   RETURNED
   OVERDUE
+  CANCELLED
 }

@@ -102,6 +102,20 @@ router.post('/', authenticate, async (req, res, next) => {
       return newRequest
     })
 
+    // Notify all admin users about the new request
+    const itemSummary = request.items.map((ri) => `${ri.item.name} ×${ri.quantity}`).join(', ')
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } })
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: 'PENDING',
+          message: `New request from ${request.user.name}: ${itemSummary}`,
+          requestId: request.id,
+        })),
+      })
+    }
+
     res.status(201).json({
       success: true,
       data: { request },

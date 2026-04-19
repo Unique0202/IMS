@@ -16,11 +16,13 @@ function timeAgo(dateStr) {
 }
 
 const TYPE_DOT = {
-  APPROVED: 'bg-emerald-500',
-  DECLINED: 'bg-red-500',
-  ISSUED:   'bg-blue-500',
-  RETURNED: 'bg-slate-400',
-  OVERDUE:  'bg-amber-500',
+  PENDING:   'bg-amber-500',
+  APPROVED:  'bg-emerald-500',
+  DECLINED:  'bg-red-500',
+  ISSUED:    'bg-blue-500',
+  RETURNED:  'bg-slate-400',
+  OVERDUE:   'bg-orange-500',
+  CANCELLED: 'bg-gray-400',
 }
 
 function Navbar({ sidebarOpen, onToggleSidebar }) {
@@ -34,6 +36,7 @@ function Navbar({ sidebarOpen, onToggleSidebar }) {
   const [unread, setUnread]         = useState(0)
   const [bellOpen, setBellOpen]     = useState(false)
   const [markingAll, setMarkingAll] = useState(false)
+  const [clearing, setClearing]     = useState(false)
   const bellRef = useRef(null)
 
   const fetchNotifs = useCallback(async () => {
@@ -67,22 +70,31 @@ function Navbar({ sidebarOpen, onToggleSidebar }) {
   }
 
   const markOne = async (notif) => {
-    if (notif.read) return
+    // Remove from list immediately (optimistic) — read ones disappear on click
+    setNotifs((prev) => prev.filter((n) => n.id !== notif.id))
+    if (!notif.read) setUnread((u) => Math.max(0, u - 1))
     try {
       await api.patch(`/api/notifications/${notif.id}/read`)
-      setNotifs((prev) => prev.map((n) => n.id === notif.id ? { ...n, read: true } : n))
-      setUnread((u) => Math.max(0, u - 1))
-    } catch { /* ignore */ }
+    } catch { /* ignore — already removed from UI */ }
   }
 
   const markAll = async () => {
     setMarkingAll(true)
     try {
       await api.patch('/api/notifications/read-all')
-      setNotifs((prev) => prev.map((n) => ({ ...n, read: true })))
+      setNotifs([])
       setUnread(0)
     } catch { /* ignore */ }
     setMarkingAll(false)
+  }
+
+  const clearRead = async () => {
+    setClearing(true)
+    try {
+      await api.delete('/api/notifications/clear-read')
+      setNotifs((prev) => prev.filter((n) => !n.read))
+    } catch { /* ignore */ }
+    setClearing(false)
   }
 
   const handleLogout = () => {
@@ -154,23 +166,42 @@ function Navbar({ sidebarOpen, onToggleSidebar }) {
             <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                <p className="text-sm font-semibold text-slate-900 font-body">Notifications</p>
-                {unread > 0 && (
-                  <button
-                    onClick={markAll}
-                    disabled={markingAll}
-                    className="text-xs text-cyan-600 hover:text-cyan-800 font-body cursor-pointer disabled:opacity-50"
-                  >
-                    Mark all read
-                  </button>
-                )}
+                <p className="text-sm font-semibold text-slate-900 font-body">
+                  Notifications
+                  {unread > 0 && (
+                    <span className="ml-2 text-xs font-bold text-cyan-700">{unread} new</span>
+                  )}
+                </p>
+                <div className="flex items-center gap-2">
+                  {unread > 0 && (
+                    <button
+                      onClick={markAll}
+                      disabled={markingAll}
+                      className="text-xs text-cyan-600 hover:text-cyan-800 font-body cursor-pointer disabled:opacity-50"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  {notifs.some((n) => n.read) && (
+                    <button
+                      onClick={clearRead}
+                      disabled={clearing}
+                      className="text-xs text-slate-400 hover:text-slate-600 font-body cursor-pointer disabled:opacity-50"
+                    >
+                      Clear read
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* List */}
               <div className="max-h-80 overflow-y-auto">
                 {notifs.length === 0 ? (
                   <div className="px-4 py-8 text-center">
-                    <p className="text-sm text-slate-400 font-body">No notifications yet</p>
+                    <svg className="w-8 h-8 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" />
+                    </svg>
+                    <p className="text-sm text-slate-400 font-body">No new notifications</p>
                   </div>
                 ) : (
                   notifs.map((n) => (
@@ -178,13 +209,13 @@ function Navbar({ sidebarOpen, onToggleSidebar }) {
                       key={n.id}
                       onClick={() => markOne(n)}
                       className={`w-full text-left px-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer ${
-                        !n.read ? 'bg-cyan-50/50' : ''
+                        !n.read ? 'bg-cyan-50/40' : ''
                       }`}
                     >
                       <div className="flex items-start gap-2.5">
-                        <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!n.read ? (TYPE_DOT[n.type] || 'bg-slate-400') : 'bg-transparent'}`} />
+                        <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!n.read ? (TYPE_DOT[n.type] || 'bg-slate-400') : 'bg-slate-200'}`} />
                         <div className="min-w-0">
-                          <p className={`text-xs font-body leading-relaxed ${!n.read ? 'text-slate-800 font-medium' : 'text-slate-500'}`}>
+                          <p className={`text-xs font-body leading-relaxed ${!n.read ? 'text-slate-800 font-medium' : 'text-slate-400'}`}>
                             {n.message}
                           </p>
                           <p className="text-[10px] text-slate-400 font-body mt-0.5">{timeAgo(n.createdAt)}</p>
