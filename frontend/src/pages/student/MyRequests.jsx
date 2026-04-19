@@ -90,6 +90,100 @@ function deadlineText(deadlineStr) {
   return `${diffDays} day${diffDays > 1 ? 's' : ''} left to collect`
 }
 
+const PAGE_SIZE = 15
+
+const TIMELINE_STEPS = ['Submitted', 'Approved', 'Issued', 'Returned']
+const STATUS_STEP = { PENDING: 0, APPROVED: 1, ISSUED: 2, RETURNED: 3 }
+
+function StatusTimeline({ status }) {
+  if (status === 'DECLINED' || status === 'CANCELLED') {
+    return (
+      <div className="flex items-center gap-2 py-2">
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body ${
+          status === 'DECLINED' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'
+        }`}>
+          {status === 'DECLINED' ? '✕ Declined' : '✕ Cancelled'}
+        </span>
+      </div>
+    )
+  }
+
+  const currentStep = STATUS_STEP[status] ?? 0
+
+  return (
+    <div className="flex items-center gap-0 py-2">
+      {TIMELINE_STEPS.map((label, idx) => {
+        const done    = idx < currentStep
+        const active  = idx === currentStep
+        const future  = idx > currentStep
+        return (
+          <div key={label} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                done   ? 'bg-emerald-500' :
+                active ? 'bg-cyan-600' :
+                         'bg-slate-200'
+              }`}>
+                {done ? (
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className={`w-2 h-2 rounded-full ${active ? 'bg-white' : 'bg-slate-400'}`} />
+                )}
+              </div>
+              <span className={`text-[9px] mt-1 font-body whitespace-nowrap ${
+                done ? 'text-emerald-600 font-semibold' :
+                active ? 'text-cyan-700 font-semibold' :
+                         'text-slate-400'
+              }`}>{label}</span>
+            </div>
+            {idx < TIMELINE_STEPS.length - 1 && (
+              <div className={`h-0.5 flex-1 mx-1 mb-3 rounded ${done ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function Pagination({ currentPage, totalPages, onChange }) {
+  if (totalPages <= 1) return null
+  const pages = []
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '…') {
+      pages.push('…')
+    }
+  }
+  return (
+    <div className="flex items-center justify-center gap-1 mt-6">
+      <button onClick={() => onChange(currentPage - 1)} disabled={currentPage === 1}
+        className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-body cursor-pointer transition-colors">
+        ← Prev
+      </button>
+      {pages.map((p, i) =>
+        p === '…' ? (
+          <span key={`e${i}`} className="px-2 text-xs text-slate-400 font-body">…</span>
+        ) : (
+          <button key={p} onClick={() => onChange(p)}
+            className={`w-8 h-8 text-xs rounded-lg font-body cursor-pointer transition-colors ${
+              p === currentPage ? 'bg-slate-900 text-white font-semibold' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}>
+            {p}
+          </button>
+        )
+      )}
+      <button onClick={() => onChange(currentPage + 1)} disabled={currentPage === totalPages}
+        className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-body cursor-pointer transition-colors">
+        Next →
+      </button>
+    </div>
+  )
+}
+
 function MyRequests() {
   const navigate = useNavigate()
   const { addToCart, clearCart } = useCart()
@@ -99,6 +193,7 @@ function MyRequests() {
   const [activeTab, setActiveTab] = useState('ALL')
   const [expandedReasons, setExpandedReasons] = useState({})
   const [cancellingId, setCancellingId] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -118,10 +213,16 @@ function MyRequests() {
     fetchRequests()
   }, [])
 
+  useEffect(() => { setCurrentPage(1) }, [activeTab])
+
   // Filter by selected status tab
   const filtered = activeTab === 'ALL'
     ? requests
     : requests.filter((r) => r.status === activeTab)
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const safePage   = Math.min(currentPage, totalPages || 1)
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   // Count per status for tab badges
   const countByStatus = requests.reduce((acc, r) => {
@@ -235,9 +336,16 @@ function MyRequests() {
         </div>
       )}
 
+      {/* Result count */}
+      {filtered.length > 0 && (
+        <p className="text-xs text-slate-400 font-body mb-3">
+          Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} request{filtered.length !== 1 ? 's' : ''}
+        </p>
+      )}
+
       {/* Request cards */}
       <div className="flex flex-col gap-4">
-        {filtered.map((request) => {
+        {paginated.map((request) => {
           const style = STATUS_STYLES[request.status]
           const isLongReason = request.reason.length > 120
           const showFull = expandedReasons[request.id]
@@ -255,6 +363,11 @@ function MyRequests() {
                   {style.label}
                 </span>
                 <span className="text-xs text-slate-400 font-body">{timeAgo(request.createdAt)}</span>
+              </div>
+
+              {/* Status timeline */}
+              <div className="px-5 pt-3 pb-0">
+                <StatusTimeline status={request.status} />
               </div>
 
               {/* Card body */}
@@ -351,6 +464,8 @@ function MyRequests() {
           )
         })}
       </div>
+
+      <Pagination currentPage={safePage} totalPages={totalPages} onChange={setCurrentPage} />
     </div>
   )
 }

@@ -540,6 +540,57 @@ function ModalShell({ title, onClose, children }) {
   )
 }
 
+const PAGE_SIZE = 15
+
+function Pagination({ currentPage, totalPages, onChange }) {
+  if (totalPages <= 1) return null
+
+  const pages = []
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '…') {
+      pages.push('…')
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1 mt-6">
+      <button
+        onClick={() => onChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-body cursor-pointer transition-colors"
+      >
+        ← Prev
+      </button>
+      {pages.map((p, i) =>
+        p === '…' ? (
+          <span key={`e${i}`} className="px-2 text-xs text-slate-400 font-body">…</span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onChange(p)}
+            className={`w-8 h-8 text-xs rounded-lg font-body cursor-pointer transition-colors ${
+              p === currentPage
+                ? 'bg-slate-900 text-white font-semibold'
+                : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {p}
+          </button>
+        )
+      )}
+      <button
+        onClick={() => onChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-body cursor-pointer transition-colors"
+      >
+        Next →
+      </button>
+    </div>
+  )
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 function AdminRequests() {
   const [requests, setRequests] = useState([])
@@ -548,6 +599,8 @@ function AdminRequests() {
   const [activeTab, setActiveTab] = useState('ALL')
   const [activeModal, setActiveModal] = useState(null) // { type, request }
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [deletingId, setDeletingId] = useState(null)
 
   const fetchRequests = useCallback(async () => {
     setError('')
@@ -562,10 +615,24 @@ function AdminRequests() {
   }, [])
 
   useEffect(() => { fetchRequests() }, [fetchRequests])
+  useEffect(() => { setCurrentPage(1) }, [activeTab, search])
 
   const handleActionSuccess = () => {
     setActiveModal(null)
     fetchRequests()
+  }
+
+  const handleDelete = async (request) => {
+    if (!window.confirm(`Delete this ${request.status.toLowerCase()} request from ${request.user.name}? This cannot be undone.`)) return
+    setDeletingId(request.id)
+    try {
+      await api.delete(`/api/requests/${request.id}`)
+      setRequests((prev) => prev.filter((r) => r.id !== request.id))
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to delete request')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const filtered = requests
@@ -579,6 +646,10 @@ function AdminRequests() {
         r.items.some((ri) => ri.item.name.toLowerCase().includes(q))
       )
     })
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const safePage   = Math.min(currentPage, totalPages || 1)
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   const countByStatus = requests.reduce((acc, r) => {
     acc[r.status] = (acc[r.status] || 0) + 1
@@ -662,9 +733,16 @@ function AdminRequests() {
         </div>
       )}
 
+      {/* Result count */}
+      {filtered.length > 0 && (
+        <p className="text-xs text-slate-400 font-body mb-3">
+          Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} request{filtered.length !== 1 ? 's' : ''}
+        </p>
+      )}
+
       {/* Request cards */}
       <div className="flex flex-col gap-4">
-        {filtered.map((request) => {
+        {paginated.map((request) => {
           const style = STATUS_STYLES[request.status]
           const itemSummary = request.items.map((ri) => `${ri.item.name} ×${ri.quantity}`).join(', ')
 
@@ -797,12 +875,29 @@ function AdminRequests() {
                       Mark as Returned
                     </button>
                   )}
+
+                  {/* Delete — only for safe terminal statuses */}
+                  {['PENDING', 'DECLINED', 'CANCELLED'].includes(request.status) && (
+                    <button
+                      onClick={() => handleDelete(request)}
+                      disabled={deletingId === request.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors font-body cursor-pointer disabled:opacity-50 ml-auto"
+                      title="Delete request"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      {deletingId === request.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           )
         })}
       </div>
+
+      <Pagination currentPage={safePage} totalPages={totalPages} onChange={setCurrentPage} />
 
       {/* Modals */}
       {activeModal?.type === 'approve' && (

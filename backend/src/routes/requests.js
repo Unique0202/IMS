@@ -213,6 +213,41 @@ router.get('/all', authenticate, authorizeAdmin, async (req, res, next) => {
 })
 
 /**
+ * DELETE /api/requests/:id  (admin only)
+ * Hard-deletes a request. Only allowed for PENDING, DECLINED, and CANCELLED
+ * requests — statuses where no items have been physically handed out.
+ */
+router.delete('/:id', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const requestId = parseInt(req.params.id)
+    if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
+
+    const existing = await prisma.request.findUnique({ where: { id: requestId } })
+    if (!existing) throw createError(404, 'Request not found', 'NOT_FOUND')
+
+    const deletable = ['PENDING', 'DECLINED', 'CANCELLED']
+    if (!deletable.includes(existing.status)) {
+      throw createError(
+        400,
+        `Cannot delete a ${existing.status} request. Only PENDING, DECLINED, or CANCELLED requests can be deleted.`,
+        'INVALID_STATUS'
+      )
+    }
+
+    // Delete in order: notifications → requestItems → request
+    await prisma.$transaction([
+      prisma.notification.deleteMany({ where: { requestId } }),
+      prisma.requestItem.deleteMany({ where: { requestId } }),
+      prisma.request.delete({ where: { id: requestId } }),
+    ])
+
+    res.json({ success: true, data: { message: 'Request deleted' } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
  * PATCH /api/requests/:id/cancel  (student only)
  * Allows a student to cancel their own PENDING request.
  */
