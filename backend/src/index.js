@@ -26,6 +26,7 @@ const inventoryRoutes = require('./routes/inventory')
 const requestRoutes = require('./routes/requests')
 const notificationRoutes = require('./routes/notifications')
 const userRoutes = require('./routes/users')
+const reportRoutes = require('./routes/reports')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -66,6 +67,9 @@ app.use('/api/notifications', notificationRoutes)
 
 // User routes: admin sees all students
 app.use('/api/users', userRoutes)
+
+// Reports routes: analytics + CSV export
+app.use('/api/reports', reportRoutes)
 
 // ===== ERROR HANDLER (must be last) =====
 app.use(errorHandler)

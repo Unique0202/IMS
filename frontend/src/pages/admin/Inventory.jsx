@@ -254,6 +254,93 @@ function DeleteModal({ item, onClose, onDeleted }) {
   )
 }
 
+const HISTORY_STATUS_STYLES = {
+  PENDING:   'bg-amber-100 text-amber-700',
+  APPROVED:  'bg-emerald-100 text-emerald-700',
+  ISSUED:    'bg-blue-100 text-blue-700',
+  RETURNED:  'bg-slate-100 text-slate-600',
+  DECLINED:  'bg-red-100 text-red-700',
+  CANCELLED: 'bg-gray-100 text-gray-600',
+}
+
+function HistoryDrawer({ item, onClose }) {
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get(`/api/inventory/items/${item.id}/history`)
+      .then((res) => { if (res.data.success) setHistory(res.data.data.history) })
+      .finally(() => setLoading(false))
+
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [item.id, onClose])
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-slate-900 font-heading truncate">{item.name}</h2>
+            <p className="text-xs text-slate-500 font-body">Borrowing history</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 cursor-pointer ml-4 flex-shrink-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin h-6 w-6 border-4 border-cyan-500 border-t-transparent rounded-full" />
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-500 font-body text-sm">No borrowing history yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((h, idx) => (
+                <div key={idx} className="bg-slate-50 rounded-2xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 font-body truncate">{h.user.name}</p>
+                      <p className="text-xs text-slate-400 font-body truncate">{h.user.email}</p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium font-body flex-shrink-0 ${HISTORY_STATUS_STYLES[h.status]}`}>
+                      {h.status}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 text-xs text-slate-500 font-body">
+                    <span>Requested: <strong className="text-slate-700">{h.quantity}</strong></span>
+                    {h.issuedQuantity != null && (
+                      <span>Issued: <strong className="text-slate-700">{h.issuedQuantity}</strong></span>
+                    )}
+                  </div>
+                  {h.transaction?.returnedAt && (
+                    <p className="text-xs text-slate-400 font-body mt-1">
+                      Returned · {h.transaction.conditionOnReturn ? `Condition: ${h.transaction.conditionOnReturn}` : 'No condition noted'}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-slate-300 font-body mt-2">
+                    {new Date(h.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function AdminInventory() {
   const navigate = useNavigate()
@@ -263,6 +350,7 @@ export default function AdminInventory() {
   const [error, setError]         = useState('')
   const [editItem, setEditItem]   = useState(null)
   const [deleteItem, setDeleteItem] = useState(null)
+  const [historyItem, setHistoryItem] = useState(null)
 
   // Filters
   const [search, setSearch]           = useState('')
@@ -422,9 +510,13 @@ export default function AdminInventory() {
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
                             {deleted ? (
-                              <button onClick={() => handleRestore(item)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-body cursor-pointer transition-colors font-medium">Restore</button>
+                              <>
+                                <button onClick={() => setHistoryItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium">History</button>
+                                <button onClick={() => handleRestore(item)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-body cursor-pointer transition-colors font-medium">Restore</button>
+                              </>
                             ) : (
                               <>
+                                <button onClick={() => setHistoryItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium">History</button>
                                 <button onClick={() => setEditItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-body cursor-pointer transition-colors font-medium">Edit</button>
                                 <button onClick={() => setDeleteItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-body cursor-pointer transition-colors font-medium">Remove</button>
                               </>
@@ -466,9 +558,13 @@ export default function AdminInventory() {
                     </div>
                     <div className="flex gap-2">
                       {deleted ? (
-                        <button onClick={() => handleRestore(item)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-body cursor-pointer font-medium">Restore</button>
+                        <>
+                          <button onClick={() => setHistoryItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-body cursor-pointer font-medium">History</button>
+                          <button onClick={() => handleRestore(item)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-body cursor-pointer font-medium">Restore</button>
+                        </>
                       ) : (
                         <>
+                          <button onClick={() => setHistoryItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-body cursor-pointer font-medium">History</button>
                           <button onClick={() => setEditItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-body cursor-pointer font-medium">Edit</button>
                           <button onClick={() => setDeleteItem(item)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-body cursor-pointer font-medium">Remove</button>
                         </>
@@ -495,6 +591,9 @@ export default function AdminInventory() {
           onClose={() => setDeleteItem(null)}
           onDeleted={() => { setDeleteItem(null); fetchItems() }}
         />
+      )}
+      {historyItem && (
+        <HistoryDrawer item={historyItem} onClose={() => setHistoryItem(null)} />
       )}
     </div>
   )

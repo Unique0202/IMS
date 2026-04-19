@@ -15,6 +15,8 @@ import AdminInventory from './pages/admin/Inventory'
 import AddItem from './pages/admin/AddItem'
 import IssuedItems from './pages/admin/IssuedItems'
 import AdminUsers from './pages/admin/Users'
+import AdminCategories from './pages/admin/Categories'
+import AdminReports from './pages/admin/Reports'
 import StudentProfile from './pages/student/Profile'
 import Placeholder from './pages/Placeholder'
 
@@ -94,6 +96,8 @@ function App() {
         <Route path="issued" element={<IssuedItems />} />
         <Route path="add-item" element={<AddItem />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="categories" element={<AdminCategories />} />
+        <Route path="reports" element={<AdminReports />} />
       </Route>
 
       {/* 404 */}

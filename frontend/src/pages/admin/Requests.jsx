@@ -546,6 +546,7 @@ function AdminRequests() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('ALL')
   const [activeModal, setActiveModal] = useState(null) // { type, request }
+  const [search, setSearch] = useState('')
 
   const fetchRequests = useCallback(async () => {
     setError('')
@@ -566,7 +567,17 @@ function AdminRequests() {
     fetchRequests()
   }
 
-  const filtered = activeTab === 'ALL' ? requests : requests.filter((r) => r.status === activeTab)
+  const filtered = requests
+    .filter((r) => activeTab === 'ALL' || r.status === activeTab)
+    .filter((r) => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return (
+        r.user.name.toLowerCase().includes(q) ||
+        r.user.email.toLowerCase().includes(q) ||
+        r.items.some((ri) => ri.item.name.toLowerCase().includes(q))
+      )
+    })
 
   const countByStatus = requests.reduce((acc, r) => {
     acc[r.status] = (acc[r.status] || 0) + 1
@@ -584,11 +595,25 @@ function AdminRequests() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 font-heading">Requests</h1>
-        <p className="text-slate-500 mt-1 font-body text-sm">
-          {requests.length} total request{requests.length !== 1 ? 's' : ''}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 font-heading">Requests</h1>
+          <p className="text-slate-500 mt-1 font-body text-sm">
+            {requests.length} total request{requests.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="relative sm:w-64">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search student or item…"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl font-body focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+          />
+        </div>
       </div>
 
       {error && (

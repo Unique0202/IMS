@@ -27,6 +27,79 @@ const router = express.Router()
 const prisma = new PrismaClient()
 
 /**
+ * POST /api/categories  (admin only)
+ * Creates a new category.
+ */
+router.post('/categories', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const { name } = req.body
+    if (!name || !name.trim()) throw createError(400, 'Category name is required', 'MISSING_NAME')
+
+    const existing = await prisma.category.findFirst({
+      where: { name: { equals: name.trim(), mode: 'insensitive' } },
+    })
+    if (existing) throw createError(409, 'A category with this name already exists', 'DUPLICATE_NAME')
+
+    const category = await prisma.category.create({ data: { name: name.trim() } })
+    res.status(201).json({ success: true, data: { category } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/categories/:id  (admin only)
+ * Renames an existing category.
+ */
+router.patch('/categories/:id', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id)
+    if (isNaN(id)) throw createError(400, 'Invalid category ID', 'INVALID_ID')
+
+    const { name } = req.body
+    if (!name || !name.trim()) throw createError(400, 'Category name is required', 'MISSING_NAME')
+
+    const existing = await prisma.category.findUnique({ where: { id } })
+    if (!existing) throw createError(404, 'Category not found', 'NOT_FOUND')
+
+    const duplicate = await prisma.category.findFirst({
+      where: { name: { equals: name.trim(), mode: 'insensitive' }, id: { not: id } },
+    })
+    if (duplicate) throw createError(409, 'A category with this name already exists', 'DUPLICATE_NAME')
+
+    const category = await prisma.category.update({ where: { id }, data: { name: name.trim() } })
+    res.json({ success: true, data: { category } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * DELETE /api/categories/:id  (admin only)
+ * Deletes a category only if it has no items.
+ */
+router.delete('/categories/:id', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id)
+    if (isNaN(id)) throw createError(400, 'Invalid category ID', 'INVALID_ID')
+
+    const existing = await prisma.category.findUnique({
+      where: { id },
+      include: { _count: { select: { items: true } } },
+    })
+    if (!existing) throw createError(404, 'Category not found', 'NOT_FOUND')
+    if (existing._count.items > 0) {
+      throw createError(400, 'Cannot delete a category that has items. Remove or move all items first.', 'HAS_ITEMS')
+    }
+
+    await prisma.category.delete({ where: { id } })
+    res.json({ success: true, data: { message: 'Category deleted' } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
  * GET /api/inventory/categories
  *
  * Returns all categories with the count of ACTIVE items in each.
@@ -418,6 +491,53 @@ router.patch('/items/:id/restore', authenticate, authorizeAdmin, async (req, res
       include: { category: { select: { id: true, name: true } } },
     })
     res.json({ success: true, data: { item } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * GET /api/inventory/items/:id/history  (admin only)
+ * Returns the full borrowing history for a specific item.
+ */
+router.get('/items/:id/history', authenticate, authorizeAdmin, async (req, res, next) => {
+  try {
+    const itemId = parseInt(req.params.id)
+    if (isNaN(itemId)) throw createError(400, 'Invalid item ID', 'INVALID_ID')
+
+    const item = await prisma.item.findFirst({
+      where: { id: itemId },
+      select: { id: true, name: true, quantity: true, type: true, category: { select: { name: true } } },
+    })
+    if (!item) throw createError(404, 'Item not found', 'NOT_FOUND')
+
+    const requestItems = await prisma.requestItem.findMany({
+      where: { itemId },
+      include: {
+        request: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            transaction: {
+              select: { issuedAt: true, returnedAt: true, expectedReturnAt: true, conditionOnReturn: true },
+            },
+          },
+        },
+      },
+      orderBy: { request: { createdAt: 'desc' } },
+    })
+
+    const history = requestItems.map((ri) => ({
+      requestId: ri.request.id,
+      status: ri.request.status,
+      quantity: ri.quantity,
+      issuedQuantity: ri.issuedQuantity,
+      reason: ri.request.reason,
+      createdAt: ri.request.createdAt,
+      user: ri.request.user,
+      transaction: ri.request.transaction,
+    }))
+
+    res.json({ success: true, data: { item, history } })
   } catch (error) {
     next(error)
   }

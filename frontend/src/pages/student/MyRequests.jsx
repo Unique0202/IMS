@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../../utils/api'
+import { useCart } from '../../context/CartContext'
 
 /**
  * MyRequests page — shows all requests the student has ever submitted.
@@ -23,14 +24,15 @@ import api from '../../utils/api'
  *   This is a built-in browser API — no library needed.
  */
 
-const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'ISSUED', 'DECLINED', 'RETURNED']
+const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'ISSUED', 'DECLINED', 'RETURNED', 'CANCELLED']
 
 const STATUS_STYLES = {
-  PENDING:  { badge: 'bg-amber-100 text-amber-700 border-amber-200',  label: 'Pending' },
-  APPROVED: { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Approved' },
-  ISSUED:   { badge: 'bg-blue-100 text-blue-700 border-blue-200',    label: 'Issued' },
-  DECLINED: { badge: 'bg-red-100 text-red-700 border-red-200',       label: 'Declined' },
-  RETURNED: { badge: 'bg-slate-100 text-slate-600 border-slate-200', label: 'Returned' },
+  PENDING:   { badge: 'bg-amber-100 text-amber-700 border-amber-200',     label: 'Pending' },
+  APPROVED:  { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Approved' },
+  ISSUED:    { badge: 'bg-blue-100 text-blue-700 border-blue-200',    label: 'Issued' },
+  DECLINED:  { badge: 'bg-red-100 text-red-700 border-red-200',       label: 'Declined' },
+  RETURNED:  { badge: 'bg-slate-100 text-slate-600 border-slate-200', label: 'Returned' },
+  CANCELLED: { badge: 'bg-gray-100 text-gray-500 border-gray-200',    label: 'Cancelled' },
 }
 
 /**
@@ -89,11 +91,14 @@ function deadlineText(deadlineStr) {
 }
 
 function MyRequests() {
+  const navigate = useNavigate()
+  const { addToCart, clearCart } = useCart()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('ALL')
   const [expandedReasons, setExpandedReasons] = useState({})
+  const [cancellingId, setCancellingId] = useState(null)
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -130,6 +135,25 @@ function MyRequests() {
 
   const toggleReason = (id) =>
     setExpandedReasons((prev) => ({ ...prev, [id]: !prev[id] }))
+
+  const handleCancel = async (request) => {
+    if (!window.confirm('Cancel this request?')) return
+    setCancellingId(request.id)
+    try {
+      await api.patch(`/api/requests/${request.id}/cancel`)
+      setRequests((prev) => prev.map((r) => r.id === request.id ? { ...r, status: 'CANCELLED' } : r))
+    } catch (err) {
+      alert(err.response?.data?.error?.message || 'Failed to cancel request')
+    } finally {
+      setCancellingId(null)
+    }
+  }
+
+  const handleReRequest = (request) => {
+    clearCart()
+    request.items.forEach((ri) => addToCart(ri.item, ri.quantity))
+    navigate('/student/cart')
+  }
 
   if (loading) {
     return (
@@ -298,6 +322,30 @@ function MyRequests() {
                     )}
                   </div>
                 )}
+
+                {/* Action buttons */}
+                <div className="flex gap-2 pt-1">
+                  {request.status === 'PENDING' && (
+                    <button
+                      onClick={() => handleCancel(request)}
+                      disabled={cancellingId === request.id}
+                      className="text-xs px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-body cursor-pointer disabled:opacity-60 transition-colors"
+                    >
+                      {cancellingId === request.id ? 'Cancelling…' : 'Cancel Request'}
+                    </button>
+                  )}
+                  {(request.status === 'RETURNED' || request.status === 'DECLINED' || request.status === 'CANCELLED') && (
+                    <button
+                      onClick={() => handleReRequest(request)}
+                      className="text-xs px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-body cursor-pointer transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Request Again
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )

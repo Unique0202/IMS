@@ -136,7 +136,7 @@ router.get('/mine', authenticate, async (req, res, next) => {
         items: {
           include: {
             item: {
-              select: { id: true, name: true, type: true },
+              select: { id: true, name: true, type: true, quantity: true },
             },
           },
         },
@@ -193,6 +193,38 @@ router.get('/all', authenticate, authorizeAdmin, async (req, res, next) => {
       success: true,
       data: { requests },
     })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * PATCH /api/requests/:id/cancel  (student only)
+ * Allows a student to cancel their own PENDING request.
+ */
+router.patch('/:id/cancel', authenticate, async (req, res, next) => {
+  try {
+    const requestId = parseInt(req.params.id)
+    if (isNaN(requestId)) throw createError(400, 'Invalid request ID', 'INVALID_ID')
+
+    if (req.user.role !== 'STUDENT') {
+      throw createError(403, 'Only students can cancel requests', 'FORBIDDEN')
+    }
+
+    const request = await prisma.request.findFirst({
+      where: { id: requestId, userId: req.user.id },
+    })
+    if (!request) throw createError(404, 'Request not found', 'NOT_FOUND')
+    if (request.status !== 'PENDING') {
+      throw createError(400, 'Only PENDING requests can be cancelled', 'INVALID_STATUS')
+    }
+
+    await prisma.request.update({
+      where: { id: requestId },
+      data: { status: 'CANCELLED' },
+    })
+
+    res.json({ success: true, data: { message: 'Request cancelled successfully' } })
   } catch (error) {
     next(error)
   }
