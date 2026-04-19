@@ -21,14 +21,15 @@ import api from '../../utils/api'
  *   This is simpler than manually updating local state and avoids stale data.
  */
 
-const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'ISSUED', 'DECLINED', 'RETURNED']
+const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'ISSUED', 'DECLINED', 'RETURNED', 'CANCELLED']
 
 const STATUS_STYLES = {
-  PENDING:  { badge: 'bg-amber-100 text-amber-700 border-amber-200',    label: 'Pending' },
-  APPROVED: { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Approved' },
-  ISSUED:   { badge: 'bg-blue-100 text-blue-700 border-blue-200',       label: 'Issued' },
-  DECLINED: { badge: 'bg-red-100 text-red-700 border-red-200',          label: 'Declined' },
-  RETURNED: { badge: 'bg-slate-100 text-slate-600 border-slate-200',    label: 'Returned' },
+  PENDING:   { badge: 'bg-amber-100 text-amber-700 border-amber-200',    label: 'Pending' },
+  APPROVED:  { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Approved' },
+  ISSUED:    { badge: 'bg-blue-100 text-blue-700 border-blue-200',       label: 'Issued' },
+  DECLINED:  { badge: 'bg-red-100 text-red-700 border-red-200',          label: 'Declined' },
+  RETURNED:  { badge: 'bg-slate-100 text-slate-600 border-slate-200',    label: 'Returned' },
+  CANCELLED: { badge: 'bg-gray-100 text-gray-500 border-gray-200',       label: 'Cancelled' },
 }
 
 function timeAgo(dateStr) {
