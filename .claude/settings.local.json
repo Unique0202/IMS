@@ -4,7 +4,11 @@
       "WebSearch",
       "WebFetch(domain:commons.wikimedia.org)",
       "WebFetch(domain:www.adafruit.com)",
-      "WebFetch(domain:www.sparkfun.com)"
+      "WebFetch(domain:www.sparkfun.com)",
+      "Bash(Get-ChildItem -Path \"E:\\\\IMS\\\\IMS\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(npm install *)",
+      "Bash(Get-ChildItem \"E:\\\\IMS\\\\IMS\\\\backend\" -Force)"
     ]
   }
 }

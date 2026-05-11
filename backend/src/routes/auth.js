@@ -1,5 +1,7 @@
 const express = require('express')
 const bcrypt = require('bcrypt')
+const crypto = require('crypto')
+const { OAuth2Client } = require('google-auth-library')
 const { PrismaClient } = require('@prisma/client')
 const { generateToken } = require('../utils/jwt')
 const { createError } = require('../middleware/errorHandler')
@@ -7,6 +9,7 @@ const { authenticate } = require('../middleware/auth')
 
 const router = express.Router()
 const prisma = new PrismaClient()
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 /**
  * POST /api/auth/signup
@@ -196,6 +199,85 @@ router.patch('/change-password', authenticate, async (req, res, next) => {
     await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } })
 
     res.json({ success: true, data: { message: 'Password changed successfully' } })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * POST /api/auth/google
+ * Verifies a Google ID token from the frontend and issues our own JWT.
+ *
+ * FLOW:
+ *   1. Frontend gets a credential (ID token) from Google Identity Services
+ *   2. Sends it here — we verify it with Google's public key
+ *   3. We extract the email from the verified payload
+ *   4. Email must end in @iiitd.ac.in — blocked otherwise
+ *   5. We find or auto-create the student in our DB
+ *   6. Return our own JWT (same as normal login)
+ *
+ * WHY VERIFY ON THE BACKEND?
+ *   The frontend cannot be trusted to self-report "I have a valid Google token".
+ *   We call Google's servers to verify the token signature before trusting it.
+ */
+router.post('/google', async (req, res, next) => {
+  try {
+    const { credential } = req.body
+    if (!credential) {
+      throw createError(400, 'Google credential is required', 'MISSING_CREDENTIAL')
+    }
+
+    // Verify the Google ID token with Google's public keys
+    let payload
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      })
+      payload = ticket.getPayload()
+    } catch {
+      throw createError(401, 'Invalid or expired Google token', 'INVALID_GOOGLE_TOKEN')
+    }
+
+    const { email, name } = payload
+
+    // Only allow @iiitd.ac.in emails
+    if (!email || !email.toLowerCase().endsWith('@iiitd.ac.in')) {
+      throw createError(403, 'Only IIITD email addresses (@iiitd.ac.in) are allowed', 'INVALID_DOMAIN')
+    }
+
+    // Find existing user or create on first sign-in
+    let user = await prisma.user.findUnique({ where: { email } })
+
+    if (!user) {
+      // First-time sign-in: auto-create the student account
+      // Random password so they can never log in via email/password
+      const randomPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10)
+      user = await prisma.user.create({
+        data: { name, email, password: randomPassword, role: 'STUDENT' },
+      })
+    }
+
+    // Admins must use email/password — block them from Google login
+    if (user.role === 'ADMIN') {
+      throw createError(403, 'Admin accounts must use the email and password form', 'ADMIN_USE_PASSWORD')
+    }
+
+    const token = generateToken(user)
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      },
+    })
   } catch (error) {
     next(error)
   }

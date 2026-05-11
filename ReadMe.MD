@@ -402,3 +402,22 @@ npm run dev
 ```
 
 Open http://localhost:5173 in your browser. The Vite dev server proxies all `/api` requests to the backend automatically.
+
+
+  # See all current admins
+  node scripts/manage-users.js list-admins
+
+  # Add a new admin (creates account if it doesn't exist)
+  node scripts/manage-users.js add-admin "Lab Admin Name" admin@cipd.iiitd.ac.in password123
+
+  # Promote an existing student to admin
+  node scripts/manage-users.js add-admin "Name" existing@iiitd.ac.in anypassword
+
+  # Remove admin access (demotes to student, doesn't delete)
+  node scripts/manage-users.js remove-admin admin@cipd.iiitd.ac.in
+
+  # See all students
+  node scripts/manage-users.js list-students
+
+  # Delete a student (permanent)
+  node scripts/manage-users.js delete-student student@iiitd.ac.in --confirm
