@@ -91,6 +91,28 @@ function Login() {
     }
   }
 
+  // ── Student email/password login (kept for test accounts during testing phase) ──
+  const handleStudentLogin = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (!email.trim() || !password.trim()) {
+      setError('Please fill in all fields')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const response = await api.post('/api/auth/login', { email, password })
+      const { token, user } = response.data.data
+      login(user, token)
+      navigate('/student/dashboard')
+    } catch (err) {
+      const message = err.response?.data?.error?.message || 'Login failed. Please try again.'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // ── Admin email/password login ───────────────────────────────────────────
   const handleAdminLogin = async (e) => {
     e.preventDefault()
@@ -222,25 +244,16 @@ function Login() {
             </div>
           )}
 
-          {/* ===== STUDENT TAB: Google Sign-In ===== */}
+          {/* ===== STUDENT TAB: Google Sign-In + Email/Password ===== */}
           {activeTab === 'student' && (
             <div className="space-y-5">
-              {/* Instruction text */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-600 font-body leading-6">
-                <span className="font-semibold text-slate-800">Students:</span> Sign in with your IIITD Google account
-                (<span className="font-mono text-xs">@iiitd.ac.in</span>). Your account is created automatically on first sign-in.
-              </div>
-
               {/* Google renders its button here — shows signed-in account name */}
               <div className="relative">
-                {/* Container for Google's rendered button */}
                 <div
                   ref={googleBtnRef}
                   className="w-full overflow-hidden rounded-2xl"
                   style={{ minHeight: '44px' }}
                 />
-
-                {/* Loading overlay while our backend processes the token */}
                 {googleLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl">
                     <svg className="animate-spin h-5 w-5 text-cyan-600" viewBox="0 0 24 24">
@@ -252,8 +265,66 @@ function Login() {
                 )}
               </div>
 
-              <p className="text-xs text-center text-slate-400 font-body">
-                Only <span className="font-mono">@iiitd.ac.in</span> Google accounts are accepted
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400 font-body">or sign in with email</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              {/* Email/password form — kept for test accounts during testing phase */}
+              <form onSubmit={handleStudentLogin} className="space-y-4">
+                <div>
+                  <label htmlFor="student-email" className="block text-sm font-medium text-gray-700 mb-1.5 font-body">
+                    Institute email
+                  </label>
+                  <input
+                    id="student-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@iiitd.ac.in"
+                    className="w-full px-4 py-3.5 border border-slate-200 bg-white rounded-2xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all placeholder:text-slate-400"
+                    autoComplete="email"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="student-password" className="block text-sm font-medium text-gray-700 mb-1.5 font-body">
+                    Password
+                  </label>
+                  <input
+                    id="student-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3.5 border border-slate-200 bg-white rounded-2xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all placeholder:text-slate-400"
+                    autoComplete="current-password"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 px-4 rounded-2xl text-white font-semibold text-sm font-body transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-95 active:scale-[0.99] shadow-[0_18px_40px_rgba(8,145,178,0.28)]"
+                  style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-light))' }}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Authenticating...
+                    </span>
+                  ) : 'Sign in'}
+                </button>
+              </form>
+
+              <p className="text-sm text-center text-gray-500 font-body">
+                Need student access?{' '}
+                <a href="/signup" className="text-cyan-700 font-semibold hover:text-cyan-800 transition-colors">
+                  Register with IIITD email
+                </a>
               </p>
             </div>
           )}
