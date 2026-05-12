@@ -35,7 +35,7 @@ const PORT = process.env.PORT || 5000
 
 // CORS: allow frontend origin, include cookies
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://lab-mgmt.iiitd.edu.in',
   credentials: true, // needed for cookies
 }))
 

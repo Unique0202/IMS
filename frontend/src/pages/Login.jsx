@@ -281,7 +281,7 @@ function Login() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@cipd.iiitd.ac.in"
+                  placeholder="admin email address"
                   className="w-full px-4 py-3 border border-slate-200 bg-slate-50 rounded-xl text-sm font-body focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent focus:bg-white transition-all placeholder:text-slate-300"
                   autoComplete="email"
                 />
