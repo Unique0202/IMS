@@ -19,7 +19,12 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
+const cron = require('node-cron')
+const { PrismaClient } = require('@prisma/client')
+const { sendReturnReminder } = require('./utils/email')
 const { errorHandler } = require('./middleware/errorHandler')
+
+const prisma = new PrismaClient()
 
 const authRoutes = require('./routes/auth')
 const inventoryRoutes = require('./routes/inventory')
@@ -73,6 +78,46 @@ app.use('/api/reports', reportRoutes)
 
 // ===== ERROR HANDLER (must be last) =====
 app.use(errorHandler)
+
+// ===== DUE DATE REMINDER CRON (runs daily at 9 AM) =====
+// Finds all ISSUED requests where expectedReturnAt is within the next 24 hours
+// and sends a reminder email to each student.
+cron.schedule('0 9 * * *', async () => {
+  try {
+    const now = new Date()
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+    const dueSoon = await prisma.request.findMany({
+      where: {
+        status: 'ISSUED',
+        transaction: {
+          expectedReturnAt: { gte: now, lte: in24h },
+          returnedAt: null,
+        },
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: { include: { item: { select: { id: true, name: true, type: true } } } },
+        transaction: true,
+      },
+    })
+
+    for (const req of dueSoon) {
+      sendReturnReminder({
+        student: req.user,
+        requestId: req.id,
+        items: req.items,
+        expectedReturnAt: req.transaction.expectedReturnAt,
+      })
+    }
+
+    if (dueSoon.length > 0) {
+      console.log(`[Cron] Sent ${dueSoon.length} return reminder(s)`)
+    }
+  } catch (err) {
+    console.error('[Cron] Return reminder failed:', err.message)
+  }
+})
 
 // ===== START SERVER =====
 app.listen(PORT, () => {

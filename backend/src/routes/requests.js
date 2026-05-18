@@ -2,6 +2,13 @@ const express = require('express')
 const { PrismaClient } = require('@prisma/client')
 const { authenticate, authorizeAdmin } = require('../middleware/auth')
 const { createError } = require('../middleware/errorHandler')
+const {
+  sendRequestReceived,
+  sendRequestApproved,
+  sendRequestDeclined,
+  sendItemsIssued,
+  sendItemsReturned,
+} = require('../utils/email')
 
 const router = express.Router()
 const prisma = new PrismaClient()
@@ -115,6 +122,14 @@ router.post('/', authenticate, async (req, res, next) => {
         })),
       })
     }
+
+    // Email student: request received
+    sendRequestReceived({
+      student: request.user,
+      requestId: request.id,
+      items: request.items,
+      reason: request.reason,
+    })
 
     res.status(201).json({
       success: true,
@@ -327,6 +342,14 @@ router.patch('/:id/approve', authenticate, authorizeAdmin, async (req, res, next
       },
     })
 
+    // Email student: request approved
+    sendRequestApproved({
+      student: updated.user,
+      requestId,
+      items: updated.items,
+      collectionDeadline: updated.collectionDeadline,
+    })
+
     res.json({ success: true, data: { request: updated } })
   } catch (error) {
     next(error)
@@ -371,6 +394,14 @@ router.patch('/:id/decline', authenticate, authorizeAdmin, async (req, res, next
         requestId,
         message: `Your request #${requestId} was declined. Reason: ${declineReason.trim()}`,
       },
+    })
+
+    // Email student: request declined
+    sendRequestDeclined({
+      student: updated.user,
+      requestId,
+      items: updated.items,
+      declineReason: declineReason.trim(),
     })
 
     res.json({ success: true, data: { request: updated } })
@@ -494,6 +525,15 @@ router.patch('/:id/issue', authenticate, authorizeAdmin, async (req, res, next) 
       return issued
     })
 
+    // Email student: items collected
+    sendItemsIssued({
+      student: updated.user,
+      requestId,
+      items: updated.items,
+      expectedReturnAt: updated.transaction?.expectedReturnAt,
+      conditionOnIssue: updated.transaction?.conditionOnIssue,
+    })
+
     res.json({ success: true, data: { request: updated } })
   } catch (error) {
     next(error)
@@ -595,6 +635,15 @@ router.patch('/:id/return', authenticate, authorizeAdmin, async (req, res, next)
       })
 
       return returned
+    })
+
+    // Email student: items returned
+    sendItemsReturned({
+      student: updated.user,
+      requestId,
+      items: updated.items,
+      conditionOnReturn: updated.transaction?.conditionOnReturn,
+      returnedAt: updated.transaction?.returnedAt,
     })
 
     res.json({ success: true, data: { request: updated } })
